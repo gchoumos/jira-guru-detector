@@ -2,6 +2,7 @@
 SETTINGS = {
     'jiraUrl':  'https://jira.openbet.com',
     'jiraPrj': 'WIL',
-    'ticketFrom': 5,
-    'ticketTo': 5,
+    'ticketFrom': 4,
+    'ticketTo': 50,
+    'fields': ['key','summary'],
 }

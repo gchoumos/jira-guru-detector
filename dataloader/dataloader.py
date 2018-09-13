@@ -11,6 +11,7 @@ class DataLoader(object):
         self.jiraPrj = SETTINGS['jiraPrj']
         self.ticketFrom = SETTINGS['ticketFrom']
         self.ticketTo = SETTINGS['ticketTo']
+        self.fields = SETTINGS['fields']
 
         print("Jira instance to be used: {0}".format(self.jiraUrl))
         print("Jira project: {0}".format(self.jiraPrj))
@@ -25,11 +26,18 @@ class DataLoader(object):
         self.jira = JIRA(self.jiraUrl,auth=(self.username, self.password))
 
     def get_titles(self):
-        """ TODO: Use JQL to do the job with a single request """
-        for i in range(self.ticketFrom,self.ticketTo+1):
-            print("Processing {0}-{1}".format(self.jiraPrj,i))
-            issue = self.jira.issue("{0}-{1}".format(self.jiraPrj,i),fields='summary')
-            print(issue.fields.summary)
+        """ Using JQL to get multiple results with a single request """
+        print("Will retrieve titles for tickets {0}-{1} to {0}-{2}"
+            .format(self.jiraPrj, self.ticketFrom, self.ticketTo))
+
+        # Build the JQL string and send a search request.
+        issues = self.jira.search_issues(
+            "id >= '{0}-{1}' and id <= '{0}-{2}'"
+            .format(self.jiraPrj, self.ticketFrom, self.ticketTo), fields=self.fields)
+
+        # Let's check the results
+        for issue in issues:
+            print("{0} -- {1}".format(issue.key,issue.fields.summary))
 
 
 dataLoader = DataLoader()
