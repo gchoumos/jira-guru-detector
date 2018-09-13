@@ -8,8 +8,7 @@ This is the very early stage of the project. For the moment I want to create a "
 
 Prerequisites:
 
-* ? 
-* ?
+* JIRA
 
 To-Do:
 
