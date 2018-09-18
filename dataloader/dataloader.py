@@ -49,7 +49,7 @@ class DataLoader(object):
         # Let's check the results
         for issue in issues:
             print(issue.key)
-            # pprint.pprint(issue.raw)
+            pprint.pprint(issue.raw)
             # for field in self.fields:
             #     pprint.pprint(issue.raw['fields'][field])
 

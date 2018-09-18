@@ -15,6 +15,7 @@ SETTINGS = {
                 'issuetype', # We want the issuetype.name
                 'description',
                 'comment', # We want stuff under the comment.comments
+                'reporter',
             ],
     'keep_noformat': False,
     'keep_code': False,
