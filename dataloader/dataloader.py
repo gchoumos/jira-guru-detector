@@ -24,6 +24,9 @@ class DataLoader(object):
         # The options dict is the one that we pass in the JIRA constructor
         self.options = SETTINGS['options']
 
+        # The dict for the Summaries csv file. Will only hold what we need for the csv.
+        self.summaries = {}
+
         print("Jira instance to be used: {0}".format(self.options['server']))
         print("Jira project: {0}".format(self.jiraPrj))
 
@@ -49,13 +52,22 @@ class DataLoader(object):
         # Let's check the results
         for issue in issues:
             print(issue.key)
-            pprint.pprint(issue.raw)
-            # for field in self.fields:
-            #     pprint.pprint(issue.raw['fields'][field])
+            # Get the info for the Summaries csv
+            self.get_issue_summary_data(issue)
 
-    # def format_field(self,cur_field):
-    #     if not self.keep_noformat:
-    #         cur_field =
+
+    def get_issue_summary_data(self, issue):
+        # pdb.set_trace()
+        cur_issue = {}
+        cur_issue[issue.key] = {}
+        cur_issue[issue.key]['summary'] = issue.fields.summary
+        cur_issue[issue.key]['reporter'] = issue.fields.reporter.name
+        cur_issue[issue.key]['created'] = issue.fields.created[:10]
+
+        print(cur_issue)
+
+
+
 
 
 dataLoader = DataLoader()

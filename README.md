@@ -20,7 +20,7 @@ First of all, I think that it would be better to have to sets of datasets. The f
 
 The current idea of how the data will look like is that there will be a csv for each of the following:
 
-### Summary (Title)
+### Summaries (Titles)
 Not sure if this will eventually play an important role or not, given that many times the issues are raised by Project Managers or people from the Customer (eg. William Hill). For the latter, the solution is simple as we can filter by email address. I suppose that the Development Leads are the ones that usually tend to raise the tickets. So (maybe) including the summaries could be a quite "biased" feature.
 
 The generated csv file will include:

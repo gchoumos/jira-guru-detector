@@ -4,19 +4,24 @@ SETTINGS = {
     'options': {
         'server': 'https://jira.openbet.com',
     },
-    'ticketFrom': 4,
-    'ticketTo': 4,
-    'fields':
-            [
-                #'key',     # Doesn't need to be explicitly set. We always want it
-                'summary',
-                'assignee', # We want the assignee.displayName
-                'created',
-                'issuetype', # We want the issuetype.name
-                'description',
-                'comment', # We want stuff under the comment.comments
-                'reporter',
-            ],
+    'ticketFrom': 50000,
+    'ticketTo': 50005,
+    'fields': [
+        'key',
+        'summary',
+        'assignee', # We want the assignee.displayName
+        'created',
+        'issuetype', # We want the issuetype.name
+        'description',
+        'comment', # We want stuff under the comment.comments
+        'reporter',
+    ],
+    'summaries_fields': [
+        'key',
+        'summary',
+        'reporter',
+        'created',
+    ],
     'keep_noformat': False,
     'keep_code': False,
 }
