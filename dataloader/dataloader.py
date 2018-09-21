@@ -24,6 +24,9 @@ class DataLoader(object):
         # The options dict is the one that we pass in the JIRA constructor
         self.options = SETTINGS['options']
 
+        # Max results for the jql searches
+        self.maxResults = SETTINGS['maxResults']
+
         # The dict for the Summaries csv file. Will only hold what we need for the csv.
         self.summaries = {}
 
@@ -47,11 +50,12 @@ class DataLoader(object):
         # Build the JQL string and send a search request.
         issues = self.jira.search_issues(
             "id >= '{0}-{1}' and id <= '{0}-{2}'"
-            .format(self.jiraPrj, self.ticketFrom, self.ticketTo), fields=self.fields)
+            .format(self.jiraPrj, self.ticketFrom, self.ticketTo),
+                    fields=self.fields, maxResults=self.maxResults)
 
         # Let's check the results
         for issue in issues:
-            print(issue.key)
+            # print(issue.key)
             # Get the info for the Summaries csv
             self.get_issue_summary_data(issue)
 
@@ -63,8 +67,11 @@ class DataLoader(object):
         cur_issue[issue.key]['summary'] = issue.fields.summary
         cur_issue[issue.key]['reporter'] = issue.fields.reporter.name
         cur_issue[issue.key]['created'] = issue.fields.created[:10]
+        # cur_issue[issue.key]['description'] = issue.fields.description
+        cur_issue[issue.key]['issuetype'] = issue.fields.issuetype.name
+        cur_issue[issue.key]['labels'] = issue.fields.labels
 
-        print(cur_issue)
+        pprint.pprint(cur_issue)
 
 
 

@@ -5,15 +5,17 @@ SETTINGS = {
         'server': 'https://jira.openbet.com',
     },
     'ticketFrom': 50000,
-    'ticketTo': 50005,
+    'ticketTo': 50100,
+    'maxResults': 100, # (defaults to 50)
     'fields': [
         'key',
         'summary',
-        'assignee', # We want the assignee.displayName
+        'assignee',
         'created',
-        'issuetype', # We want the issuetype.name
+        'issuetype',
         'description',
         'comment', # We want stuff under the comment.comments
+        'labels',
         'reporter',
     ],
     'summaries_fields': [
@@ -56,10 +58,6 @@ SETTINGS = {
 #             'comments':
 #         }
 #     }
-# }
-#   key     ('WIL-4')
-#   id      ('163244')
-#   fields  (is a dict)
 #
 #
 # comment

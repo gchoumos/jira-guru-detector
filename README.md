@@ -26,5 +26,7 @@ Not sure if this will eventually play an important role or not, given that many 
 The generated csv file will include:
 - Ticket ID (eg. WIL-123)
 - Summary (eg. "Telebet 2 - Display Customer Notes")
+- Description (It will need some cleaning (or just to be ignored) it can hold things like the release notes.
+- Labels
 - Reporter (username or email of the creator)
 - Creation Date (YYYY-MM-DD)
