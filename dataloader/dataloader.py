@@ -2,6 +2,7 @@
 import getpass
 import pprint
 import json
+import csv
 import re
 from jira import JIRA
 from settings import SETTINGS
@@ -53,28 +54,29 @@ class DataLoader(object):
             .format(self.jiraPrj, self.ticketFrom, self.ticketTo),
                     fields=self.fields, maxResults=self.maxResults)
 
-        # Let's check the results
-        for issue in issues:
-            # print(issue.key)
-            # Get the info for the Summaries csv
-            self.get_issue_summary_data(issue)
+        # Get the info for the Summaries csv from the issues in the results
+        cur_batch = self.get_issue_summary_data(issues)
+        pprint.pprint(cur_batch)
 
+        # print that batch to a csv
+        summ_cols = ['key','summary','reporter','created','issuetype','labels']
+        summ_name = 'summaries.csv'
+        with open(summ_name,'w') as f:
+            writer = csv.DictWriter(f, fieldnames=summ_cols)
+            writer.writeheader()
+            for issue in cur_batch:
+                writer.writerow(issue)
 
-    def get_issue_summary_data(self, issue):
-        # pdb.set_trace()
-        cur_issue = {}
-        cur_issue[issue.key] = {}
-        cur_issue[issue.key]['summary'] = issue.fields.summary
-        cur_issue[issue.key]['reporter'] = issue.fields.reporter.name
-        cur_issue[issue.key]['created'] = issue.fields.created[:10]
-        # cur_issue[issue.key]['description'] = issue.fields.description
-        cur_issue[issue.key]['issuetype'] = issue.fields.issuetype.name
-        cur_issue[issue.key]['labels'] = issue.fields.labels
-
-        pprint.pprint(cur_issue)
-
-
-
+    def get_issue_summary_data(self, issues):
+        """ Swaggy list comprehension """
+        return [{'key': issue.key,
+                 'summary': issue.fields.summary,
+                 'reporter': issue.fields.reporter.name,
+                 'created': issue.fields.created[:10],
+                 # 'description': issue.fields.description,
+                 'issuetype': issue.fields.issuetype.name,
+                 'labels': issue.fields.labels}
+                for issue in issues]
 
 
 dataLoader = DataLoader()

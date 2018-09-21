@@ -5,7 +5,7 @@ SETTINGS = {
         'server': 'https://jira.openbet.com',
     },
     'ticketFrom': 50000,
-    'ticketTo': 50100,
+    'ticketTo': 50005,
     'maxResults': 100, # (defaults to 50)
     'fields': [
         'key',
