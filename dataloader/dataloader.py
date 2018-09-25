@@ -50,21 +50,15 @@ class DataLoader(object):
         self.jira = JIRA(self.options,auth=(self.username, self.password))
 
     def get_issues_batch(self, batchFrom, batchTo):
-
         # If the issue search is of the form "issueKey in (WIL-1, WIL-2, WIL-3), then the
         # latest Jira Server will successfully ignore the non-existent (eg. deleted) issues.
         # Otherwise the range query could fail if a boundary is a non-existent issue.
         # I am forced to use an ugly implementation as the project I am interested in is
         # not hosted in a Jira Server of the latest (> 2 - I think) version.
-        issues = self.jira.search_issues(
-            "project = {0} and issuekey >= {0}-{1} and issuekey <={0}-{2}"
+        return self.jira.search_issues(
+            "project = {0} and issuekey >= {0}-{1} and issuekey <={0}-{2} order by issuekey asc"
             .format(self.jiraPrj, batchFrom, batchTo),
             maxResults=self.maxResults)
-
-        # pprint.pprint(cur_batch)
-
-        # Get the info for the Summaries csv from the issues in the results
-        return self.get_issue_summary_data(issues)
 
     def get_issues(self):
         """ Using JQL to get multiple results with a single request """
@@ -82,15 +76,17 @@ class DataLoader(object):
             print("Getting issues {0}-{1} to {0}-{2}".format(self.jiraPrj, batchFrom, batchTo))
             cur_batch = self.get_issues_batch(batchFrom,batchTo)
 
+            # Get the info for the Summaries csv for this batch
+            summaries = self.get_issue_summary_data(cur_batch)
+
             #  'a' to append instead of overwriting
             with open(summ_name,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=summ_cols)
                 writer.writeheader()
-                writer.writerows(cur_batch)
+                writer.writerows(summaries)
 
     def get_issue_summary_data(self, issues):
         """ Swaggy list comprehension """
-        # pdb.set_trace()
         return [{'key': issue.key,
                  'summary': issue.fields.summary,
                  'reporter': issue.fields.reporter.name,
