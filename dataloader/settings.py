@@ -16,12 +16,14 @@ SETTINGS = {
         'description',
         'comment', # We want stuff under the comment.comments
         'labels',
-        'reporter',
+        # 'reporter',
+        'creator',
     ],
     'summaries_fields': [
         'key',
         'summary',
-        'reporter',
+        # 'reporter',
+        'creator',
         'created',
     ],
     'keep_noformat': False,

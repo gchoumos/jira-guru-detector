@@ -1,7 +1,11 @@
 """
 TO DO
 
--   Put the search for issues in a loop so that we can get more than one batch.
+- If assignee is different than the creator (or reporter) then maybe we could insert a line for both (if they are openbet of course)
+  This will also benefit us in cases that the ticket has been raised by WH, which means that the summary line will be
+  ignored.
+
+- What about using creator instead of reporter??
 """
 
 
@@ -66,7 +70,7 @@ class DataLoader(object):
             .format(self.jiraPrj, self.ticketFrom, self.ticketTo))
 
         # For the csv printing
-        summ_cols = ['key','summary','reporter','created','issuetype','labels','description']
+        summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         summ_name = 'summaries.csv'
 
         # It's ugly I know
