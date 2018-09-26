@@ -4,10 +4,10 @@ TO DO
 - If assignee is different than the creator (or reporter) then maybe we could insert a line for both (if they are openbet of course)
   This will also benefit us in cases that the ticket has been raised by WH, which means that the summary line will be
   ignored.
-
 - What about using creator instead of reporter??
+- We may be only getting a maximum of 50 comments per issue. Have a look at this.
+- Mention the captcha challenge case that leads to a login error.
 """
-
 
 import getpass
 import pprint
@@ -62,7 +62,8 @@ class DataLoader(object):
         return self.jira.search_issues(
             "project = {0} and issuekey >= {0}-{1} and issuekey <={0}-{2} order by issuekey asc"
             .format(self.jiraPrj, batchFrom, batchTo),
-            maxResults=self.maxResults)
+            maxResults=self.maxResults,
+            fields=SETTINGS['fields'])
 
     def get_issues(self):
         """ Using JQL to get multiple results with a single request """
@@ -71,7 +72,9 @@ class DataLoader(object):
 
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
+        comm_cols = ['key','created','author','active','comment']
         summ_name = 'summaries.csv'
+        comm_name = 'comments.csv'
 
         # It's ugly I know
         for i in range(0,len(BATCH_INTERVALS),2):
@@ -80,26 +83,44 @@ class DataLoader(object):
             print("Getting issues {0}-{1} to {0}-{2}".format(self.jiraPrj, batchFrom, batchTo))
             cur_batch = self.get_issues_batch(batchFrom,batchTo)
 
-            # Get the info for the Summaries csv for this batch
-            summaries = self.get_issue_summary_data(cur_batch)
-
+            # Get the info we want for the "summaries" and "comments" csv files from this batch
+            summaries = self.get_summary_data(cur_batch)
             #  'a' to append instead of overwriting
             with open(summ_name,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=summ_cols)
                 writer.writeheader()
                 writer.writerows(summaries)
 
-    def get_issue_summary_data(self, issues):
+            comments = self.get_comment_data(cur_batch)
+            with open(comm_name,'a') as f:
+                writer = csv.DictWriter(f, fieldnames=comm_cols)
+                writer.writeheader()
+                writer.writerows(comments)
+
+    def get_summary_data(self, issues):
         """ Swaggy list comprehension """
         return [{'key': issue.key,
                  'summary': issue.fields.summary,
-                 'reporter': issue.fields.reporter.name,
+                 'creator': issue.fields.creator.name,
                  'created': issue.fields.created[:10],
                  'description': issue.fields.description,
                  'issuetype': issue.fields.issuetype.name,
                  'labels': issue.fields.labels}
                 for issue in issues]
 
+    def get_comment_data(self, issues):
+        """ List coprehension for comments is a bit more swaggy than for the summaries """
+        com_data = []
+        for issue in issues:
+            for i in range(issue.fields.comment.total):
+                com_data.append({
+                    'key': issue.key,
+                    'created': issue.fields.comment.comments[i].created[:10],
+                    'author': issue.fields.comment.comments[i].author.name,
+                    'active': issue.fields.comment.comments[i].author.active,
+                    'comment': issue.fields.comment.comments[i].body,
+                 })
+        return com_data
 
 dataLoader = DataLoader()
 dataLoader.get_credentials()
