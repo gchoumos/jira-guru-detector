@@ -1,12 +1,15 @@
 """
 TO DO
 
-- If assignee is different than the creator (or reporter) then maybe we could insert a line for both (if they are openbet of course)
-  This will also benefit us in cases that the ticket has been raised by WH, which means that the summary line will be
-  ignored.
+- If assignee is different than the creator (or reporter) then maybe we could insert a line for both
+  (if they are openbet of course). This will also benefit us in cases that the ticket has been raised
+  by WH, which means that the summary line will be ignored.
 - What about using creator instead of reporter??
 - We may be only getting a maximum of 50 comments per issue. Have a look at this.
 - Mention the captcha challenge case that leads to a login error.
+- I should make sure that the csv files are generated in the proper directory. Currently I only give
+  the name. This will be useful to later check if they are already there so we can ask if the user wants
+  to indeed recreate them or not.
 """
 
 import getpass
