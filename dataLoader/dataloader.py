@@ -1,6 +1,8 @@
 """
 TO DO
 
+- I think we also need the issue type to be stored along with the comments. That's in case we want to
+  ignore the ones that come from incidents.
 - If assignee is different than the creator (or reporter) then maybe we could insert a line for both
   (if they are openbet of course). This will also benefit us in cases that the ticket has been raised
   by WH, which means that the summary line will be ignored.

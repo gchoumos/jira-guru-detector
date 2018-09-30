@@ -14,15 +14,13 @@ SETTINGS = {
         'created',
         'issuetype',
         'description',
-        'comment', # We want stuff under the comment.comments
+        'comment',
         'labels',
-        # 'reporter',
         'creator',
     ],
     'summaries_fields': [
         'key',
         'summary',
-        # 'reporter',
         'creator',
         'created',
     ],
@@ -47,7 +45,7 @@ endl = [x for x in range(20199,57200,200)]
 batch_intervals = startl + endl
 batch_intervals.sort()
 
-# Then changed appropriately the boundaries that were complaining
+# Then changed the boundaries that were complaining to valid ones
 """
 BATCH_INTERVALS = [
     20000, 20199, 20200, 20399, 20400, 20599, 20600, 20799, 20800, 20999,
