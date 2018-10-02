@@ -1,21 +1,80 @@
 """ Settings for the Data Preprocessor """
 
-
 # The following list should hold all the valid users. Any data coming from inactive
 # users should be discarded. If it's empty, include them all.
 VALID_USERS = [
  # 'user1', 'user2', 'user3',
 ]
 
-# Issue types not in this list will be discarded.
+# Issue types not in this list will be discarded. If it's empty, include them all.
 VALID_ISSUE_TYPES = [
+  'Alert',
   'Analysis',
-  'Change Request',
+  'Casino Defect',
+  'Change',
   'Defect',
   'Development',
+  'Documentation Request',
   'Epic',
   'Incident',
   'Problem',
+  'Release Request',
+  'Requirement Capture',
   'Story',
+  'Subtask',
   'Task',
+  'Test Execution',
+  'Test Preparation',
+]
+
+# It's probably wiser to define what we want to keep instead. 
+IGNORE_AUTHOR_GROUPS = [
+  r'.*amayagaming\.com',
+  r'.*ashgaming\.com',
+  r'.*ballytech\.com',
+  r'.*betdigital\.net',
+  r'.*bigtimegaming\.com',
+  r'.*blueprintgaming\.com',
+  r'.*coregaming\.co\.uk',
+  r'.*cryptologic\.com',
+  r'.*derivco\.com',
+  r'.*dunes-software\.com',
+  r'.*electracade\.com',
+  r'.*endemolgames\.com',
+  r'.*endemolgaming\.com',
+  r'.*endemoluk\.com',
+  r'.*fincore\.com',
+  r'.*fremantlemedia\.com',
+  r'.*gmail\.com',
+  r'.*grandparade\.co\.uk',
+  r'.*igt\.com',
+  r'.*IGT\.com',
+  r'.*ingenuitygaming\.com',
+  r'.*innopark\.in',
+  r'.*instantwingaming\.com',
+  r'.*mazooma\.co\.uk',
+  r'.*metagu\.com',
+  r'.*microgaming\.co\.uk',
+  r'.*mobilewavesolutions\.com',
+  r'.*mubaloo\.com',
+  r'.*mx-digital\.com',
+  r'.*nds\.com',
+  r'.*netent\.com',
+  r'.*nextgengaming\.com',
+  r'.*pushgaming\.com',
+  r'.*realisticgames\.co\.uk',
+  r'.*red7mobile.com',
+  r'.*sqs\.com',
+  r'.*sqs-india\.com',
+  r'.*squiz\.co\.uk',
+  r'.*thetestpeople\.com',
+  r'.*traffgen\.com',
+  r'.*trifork\.com',
+  r'unknown',
+  r'.*wagerlogic\.com',
+  r'.*wagermill\.com',
+  r'.*whl\.co\.uk',
+  r'.*williamhill\.com',
+  r'.*WilliamHill\.com',
+  r'.*williamsinteractive.com',
 ]
