@@ -2,9 +2,9 @@
 
 
 # The following list should hold all the valid users. Any data coming from inactive
-# users should be discarded.
+# users should be discarded. If it's empty, include them all.
 VALID_USERS = [
- 'user1', 'user2', 'user3',
+ # 'user1', 'user2', 'user3',
 ]
 
 # Issue types not in this list will be discarded.

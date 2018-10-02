@@ -24,8 +24,7 @@ SETTINGS = {
         'creator',
         'created',
     ],
-    'keep_noformat': False,
-    'keep_code': False,
+    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
 }
 
 """

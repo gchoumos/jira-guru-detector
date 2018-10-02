@@ -33,9 +33,7 @@ class DataLoader(object):
         self.ticketTo = BATCH_INTERVALS[-1]
         self.fields = SETTINGS['fields']
 
-        # Setting of whether special blocks will be kept
-        self.keep_noformat = SETTINGS['keep_noformat']
-        self.keep_code = SETTINGS['keep_code']
+        self.output_path = SETTINGS['output_path']
 
         # The options dict is the one that we pass in the JIRA constructor
         self.options = SETTINGS['options']
@@ -78,8 +76,8 @@ class DataLoader(object):
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','author','active','comment']
-        summ_name = 'summaries.csv'
-        comm_name = 'comments.csv'
+        summ_name = '{0}/summaries.csv'.format(self.output_path)
+        comm_name = '{0}/comments.csv'.format(self.output_path)
 
         # It's ugly I know
         for i in range(0,len(BATCH_INTERVALS),2):
