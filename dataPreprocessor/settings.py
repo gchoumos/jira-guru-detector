@@ -1,5 +1,10 @@
 """ Settings for the Data Preprocessor """
 
+DP_SETTINGS = {
+    'input_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
+    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed',
+}
+
 # Issue types not in this list will be discarded. If it's empty, include them all.
 VALID_ISSUE_TYPES = [
   'Alert',
