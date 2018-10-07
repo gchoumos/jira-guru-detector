@@ -7,8 +7,9 @@ TODO:
   be dropping a row if ANY of the columns is NA and not only the "comment"
 """
 
-
 import re
+import argparse
+import os.path
 import pandas as pd
 from settings import *
 
@@ -21,6 +22,10 @@ class DataPreprocessor(object):
 
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--rebuild", help="rebuild datasets even if they already exist")
+        self.args = parser.parse_args()
 
     def load_comments(self):
         print("Loading Comments dataset ...")
@@ -80,20 +85,25 @@ class DataPreprocessor(object):
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path))
 
+    def preprocess(self):
+        if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
+            print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
+            return
+
+        self.load_comments()
+        self.clean_comment_newlines()
+        self.drop_na_comments()
+        self.remove_urls()
+        self.remove_emails()
+        self.remove_multiple_spaces()
+        self.extract_quotes()
+
+        # Write out the preprocessed comments file
+        self.comments_to_csv()
+
 
 preprocessor = DataPreprocessor()
-preprocessor.load_comments()
-preprocessor.clean_comment_newlines()
-preprocessor.drop_na_comments()
-preprocessor.remove_urls()
-preprocessor.remove_emails()
-preprocessor.remove_multiple_spaces()
-preprocessor.extract_quotes()
-
-# Write out the cleaner comments file
-preprocessor.comments_to_csv()
-
-
+preprocessor.preprocess()
 """
 comments.csv (WIL-20000 to WIL-57199)
 
