@@ -24,7 +24,7 @@ class DataPreprocessor(object):
         self.output_path = DP_SETTINGS['output_path']
 
         parser = argparse.ArgumentParser()
-        parser.add_argument("--rebuild", help="rebuild datasets even if they already exist")
+        parser.add_argument("--rebuild", help="rebuild datasets even if they already exist", action="store_true")
         self.args = parser.parse_args()
 
     def load_comments(self):
