@@ -5,6 +5,17 @@ TODO:
   example is quite slow.
 - I am currently dropping rows based on the comment column being NA. Maybe I should
   be dropping a row if ANY of the columns is NA and not only the "comment"
+- extract_quotes and extract_noformats (and possibly more) can be merged into 1 function
+  instead of separate ones. The specific case could be an argument and the regular
+  expressions in an if/else clause (or even in settings)
+- Regarding {quote}:
+    * Broken quotes exist! For example {Quote} or {quote]. Maybe I can just fix those 2 particular cases.
+      Actually only the first one is very common and it can be fixed if I convert all text to lower case
+      first. The other one is way too uncommon.
+    * We also have quotes with titles!! They look like {quote:title="blah blah blah"}
+    * I wonder if it would make sense to remove any {quote} tags from the comments *after* extracting them
+      to a separate column. If there are any left they are probably remnants of mistakes (for example
+      3 {quote} tags in a single comment).
 """
 
 import re
@@ -63,24 +74,55 @@ class DataPreprocessor(object):
     def extract_quotes(self):
         print("Extracting text in {quote} tags. This will take some time ...")
         # Create the new column with the quotes as returned by findall (list of tuples)
-        self.comments['quotes'] = self.comments[['comment'][0]].str.findall(r'(\{quote\}(.*?)\{quote\})')
+        self.comments['quotes'] = self.comments[['comment'][0]].str.findall(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})')
         # Iterate through the new column to keep only what we need from the tuples
-        for i in range(len(self.comments)):
-            if i % 2000 == 0:
-                print("... processed {0} rows".format(i))
-            if self.comments['quotes'][i] != []:
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i % 10000 == 0:
+                print("Extracting quotes ... processed {0} rows".format(i))
+            if row.quotes != []:
                 cur_quotes = []
-                for j in range(len(self.comments['quotes'][i])):
+                for j, quote in enumerate(row.quotes):
                     # Create a list with all the matches (without the {quote} tags
                     # That is actually the second element of each tuple
-                    cur_quotes.append(self.comments['quotes'][i][j][1])
+                    cur_quotes.append(quote[1])
                 # Join them in a single string
-                self.comments['quotes'].loc[i] = ' '.join(cur_quotes)
+                new_items.append(' '.join(cur_quotes))
             else:
-                self.comments['quotes'].loc[i] = ''
+                new_items.append('')
 
-        # Then remove quote parts from the comments column
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{quote\}(.*?)\{quote\})', '', regex=True)
+        # Then set the new quotes to the quotes column and remove quote parts from the comments column
+        self.comments['quotes'] = pd.Series(new_items).values
+        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
+
+    def extract_noformats(self):
+        print("Extracting text in {noformat} tags. This will take some time ...")
+        # Create the new column with the noformats as returned by findall (list of tuples)
+        self.comments['noformats'] = self.comments[['comment'][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i%10000 == 0:
+                print("Extracting noformats ... processed {0} rows".format(i))
+            if row.noformats != []:
+                cur_noformats = []
+                for j, noformat in enumerate(row.noformats):
+                    # Create a list with all the matches without the {noformat} tags.
+                    # We want the second element of each tuple.
+                    cur_noformats.append(noformat[1])
+                # Join them in a single string
+                new_items.append(' '.join(cur_noformats))
+            else:
+                new_items.append('')
+
+        # Then remove noformat parts from the comments column
+        self.comments['noformats'] = pd.Series(new_items).values
+        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
+
+    def fix_bad_tag_cases(self):
+        # More will probably be added
+        print("Fixing bad tag cases ...")
+        self.comments[['comment']] = self.comments[['comment']].replace('{Quote', '{quote', regex=True)
+        self.comments[['comment']] = self.comments[['comment']].replace('{Noformat', '{noformat', regex=True)
 
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path))
@@ -96,7 +138,9 @@ class DataPreprocessor(object):
         self.remove_urls()
         self.remove_emails()
         self.remove_multiple_spaces()
+        self.fix_bad_tag_cases()
         self.extract_quotes()
+        self.extract_noformats()
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
@@ -108,8 +152,9 @@ preprocessor.preprocess()
 comments.csv (WIL-20000 to WIL-57199)
 
 
-Original    - Size: 782056 KB - Lines: 12864079
-No newlines - Size: 709968 KB - Lines:   456201
-No URLs     - Size: 698696 KB
-No emails   - Size: 695204 KB
+Original            - Size: 782056 KB - Lines: 12864079
+No newlines         - Size: 709968 KB - Lines:   456201
+No URLs             - Size: 698696 KB
+No emails           - Size: 695204 KB
+Quote separation    - Size: 
 """
