@@ -118,11 +118,52 @@ class DataPreprocessor(object):
         self.comments['noformats'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
+    def extract_code(self):
+        print("Extracting {code} tags. This will take some time ...")
+        self.comments['code'] = self.comments[['comment'][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i%10000 == 0:
+                print("Extracting code ... processed {0} rows".format(i))
+            if row.code != []:
+                cur_code = []
+                for j, code_block in enumerate(row.code):
+                    cur_code.append(code_block[1])
+                new_items.append(' '.join(cur_code))
+            else:
+                new_items.append('')
+
+        # Then remove code parts from the comments column
+        self.comments['code'] = pd.Series(new_items).values
+        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
+
+    def extract_panels(self):
+        # I am not sure if panels can include nested panels. I will assume no.
+        print("Extracting {panel} tags. This will take some time ...")
+        self.comments['panels'] = self.comments[['comment'][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i%10000 == 0:
+                print("Extracting panels ... processed {0} rows".format(i))
+            if row.panels != []:
+                cur_panel = []
+                for j, panel in enumerate(row.panels):
+                    cur_panel.append(panel[1])
+                new_items.append(' '.join(cur_panel))
+            else:
+                new_items.append('')
+
+        # Then remove panel parts from the comments column
+        self.comments['panels'] = pd.Series(new_items).values
+        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
+
     def fix_bad_tag_cases(self):
         # More will probably be added
         print("Fixing bad tag cases ...")
-        self.comments[['comment']] = self.comments[['comment']].replace('{Quote', '{quote', regex=True)
         self.comments[['comment']] = self.comments[['comment']].replace('{Noformat', '{noformat', regex=True)
+
+    def remove_special_tags(self):
+        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
 
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path))
@@ -139,6 +180,9 @@ class DataPreprocessor(object):
         self.remove_emails()
         self.remove_multiple_spaces()
         self.fix_bad_tag_cases()
+        self.remove_special_tags()
+        self.extract_code()
+        self.extract_panels()
         self.extract_quotes()
         self.extract_noformats()
 
