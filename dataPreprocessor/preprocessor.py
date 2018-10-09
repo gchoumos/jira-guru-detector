@@ -23,6 +23,7 @@ TODO:
 """
 
 import re
+import string
 import argparse
 import os.path
 import pandas as pd
@@ -82,7 +83,7 @@ class DataPreprocessor(object):
         # Iterate through the new column to keep only what we need from the tuples
         new_items = []
         for i, row in self.comments.iterrows():
-            if i % 10000 == 0:
+            if i != 0 and i % 100000 == 0:
                 print("Extracting quotes ... processed {0} rows".format(i))
             if row.quotes != []:
                 cur_quotes = []
@@ -95,6 +96,8 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
+        print("Extraction of quotes complete. Processed {0} rows".format(i))
+
         # Then set the new quotes to the quotes column and remove quote parts from the comments column
         self.comments['quotes'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
@@ -104,7 +107,7 @@ class DataPreprocessor(object):
         self.comments['noformats'] = self.comments[['comment'][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i%10000 == 0:
+            if i != 0 and i % 100000 == 0:
                 print("Extracting noformats ... processed {0} rows".format(i))
             if row.noformats != []:
                 cur_noformats = []
@@ -114,6 +117,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
+        print("Extraction of noformats complete. Processed {0} rows".format(i))
         # Remove noformat parts from the comments column
         self.comments['noformats'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
@@ -123,7 +127,7 @@ class DataPreprocessor(object):
         self.comments['code'] = self.comments[['comment'][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i%10000 == 0:
+            if i != 0 and i % 100000 == 0:
                 print("Extracting code ... processed {0} rows".format(i))
             if row.code != []:
                 cur_code = []
@@ -132,6 +136,8 @@ class DataPreprocessor(object):
                 new_items.append(' '.join(cur_code))
             else:
                 new_items.append('')
+
+        print("Extraction of code complete. Processed {0} rows".format(i))
 
         # Remove code parts from the comments column
         self.comments['code'] = pd.Series(new_items).values
@@ -143,7 +149,7 @@ class DataPreprocessor(object):
         self.comments['panels'] = self.comments[['comment'][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i%10000 == 0:
+            if i != 0 and i % 100000 == 0:
                 print("Extracting panels ... processed {0} rows".format(i))
             if row.panels != []:
                 cur_panel = []
@@ -152,6 +158,8 @@ class DataPreprocessor(object):
                 new_items.append(' '.join(cur_panel))
             else:
                 new_items.append('')
+
+        print("Extraction of panels complete. Processed {0} rows".format(i))
 
         # Remove panel parts from the comments column
         self.comments['panels'] = pd.Series(new_items).values
@@ -163,7 +171,25 @@ class DataPreprocessor(object):
         self.comments[['comment']] = self.comments[['comment']].replace('{Noformat', '{noformat', regex=True)
 
     def remove_special_tags(self):
+        print("Removing special tags ...")
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
+
+    def remove_punctuation(self, colname):
+        print("Removing punctuation apart from dashes and underscores ...")
+        print("   ~ column {0}".format(colname))
+        # Remove punctuation except for dashes (-) and underscores(_)
+        punct = '|'.join([re.escape(x) for x in string.punctuation.replace('-','').replace('_','')])
+
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i != 0 and i % 100000 == 0:
+                print("Removing punctuation ... processed {0} rows.".format(i))
+            if len(row[colname]) > 0:
+                new_items.append(row[colname].replace(punct, ' '))
+            else:
+                new_items.append('')
+
+        self.comments[colname] = pd.Series(new_items).values
 
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path))
@@ -185,6 +211,8 @@ class DataPreprocessor(object):
         self.extract_quotes()
         self.extract_noformats()
         self.extract_panels()
+        for column in ['comment', 'quotes', 'noformats', 'panels']:
+            self.remove_punctuation(column)
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
