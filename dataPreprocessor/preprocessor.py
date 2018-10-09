@@ -3,6 +3,10 @@ TODO:
 
 - Check if the regular expressions can be written more efficiently. The e-mail one for
   example is quite slow.
+- Extract tables? It could be fairly easy to extract them as most of them are actually
+  lines that (after trimmed of whitespace) start and end with "|". However bear in mind
+  that this kind of line starting/ending criterion only applies before removing the
+  newlines. Actually I am more inclined to NOT extract them to be honest.
 - I am currently dropping rows based on the comment column being NA. Maybe I should
   be dropping a row if ANY of the columns is NA and not only the "comment"
 - extract_quotes and extract_noformats (and possibly more) can be merged into 1 function
@@ -97,7 +101,6 @@ class DataPreprocessor(object):
 
     def extract_noformats(self):
         print("Extracting text in {noformat} tags. This will take some time ...")
-        # Create the new column with the noformats as returned by findall (list of tuples)
         self.comments['noformats'] = self.comments[['comment'][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
         new_items = []
         for i, row in self.comments.iterrows():
@@ -106,15 +109,12 @@ class DataPreprocessor(object):
             if row.noformats != []:
                 cur_noformats = []
                 for j, noformat in enumerate(row.noformats):
-                    # Create a list with all the matches without the {noformat} tags.
-                    # We want the second element of each tuple.
                     cur_noformats.append(noformat[1])
-                # Join them in a single string
                 new_items.append(' '.join(cur_noformats))
             else:
                 new_items.append('')
 
-        # Then remove noformat parts from the comments column
+        # Remove noformat parts from the comments column
         self.comments['noformats'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
@@ -133,7 +133,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        # Then remove code parts from the comments column
+        # Remove code parts from the comments column
         self.comments['code'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
 
@@ -153,7 +153,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        # Then remove panel parts from the comments column
+        # Remove panel parts from the comments column
         self.comments['panels'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
 
@@ -182,9 +182,9 @@ class DataPreprocessor(object):
         self.fix_bad_tag_cases()
         self.remove_special_tags()
         self.extract_code()
-        self.extract_panels()
         self.extract_quotes()
         self.extract_noformats()
+        self.extract_panels()
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
@@ -192,6 +192,7 @@ class DataPreprocessor(object):
 
 preprocessor = DataPreprocessor()
 preprocessor.preprocess()
+
 """
 comments.csv (WIL-20000 to WIL-57199)
 
