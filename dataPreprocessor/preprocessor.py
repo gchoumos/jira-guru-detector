@@ -64,9 +64,9 @@ class DataPreprocessor(object):
             self.comments = self.comments.reset_index(drop=True)
             print("New length: {0}".format(len(self.comments)))
 
-    def remove_multiple_spaces(self):
-        print("Removing multiple spaces ...")
-        self.comments[['comment']] = self.comments[['comment']].replace(r'\s+',' ', regex=True)
+    def remove_multiple_spaces(self,colname='comment'):
+        print("Removing multiple spaces from column '{0}' ...".format(colname))
+        self.comments[[colname]] = self.comments[[colname]].replace(r'\s+',' ', regex=True)
 
     def remove_urls(self):
         print("Removing URLs ...")
@@ -83,7 +83,7 @@ class DataPreprocessor(object):
         # Iterate through the new column to keep only what we need from the tuples
         new_items = []
         for i, row in self.comments.iterrows():
-            if i != 0 and i % 100000 == 0:
+            if i != 0 and i % 200000 == 0:
                 print("Extracting quotes ... processed {0} rows".format(i))
             if row.quotes != []:
                 cur_quotes = []
@@ -107,7 +107,7 @@ class DataPreprocessor(object):
         self.comments['noformats'] = self.comments[['comment'][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i != 0 and i % 100000 == 0:
+            if i != 0 and i % 200000 == 0:
                 print("Extracting noformats ... processed {0} rows".format(i))
             if row.noformats != []:
                 cur_noformats = []
@@ -127,7 +127,7 @@ class DataPreprocessor(object):
         self.comments['code'] = self.comments[['comment'][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i != 0 and i % 100000 == 0:
+            if i != 0 and i % 200000 == 0:
                 print("Extracting code ... processed {0} rows".format(i))
             if row.code != []:
                 cur_code = []
@@ -149,7 +149,7 @@ class DataPreprocessor(object):
         self.comments['panels'] = self.comments[['comment'][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
         new_items = []
         for i, row in self.comments.iterrows():
-            if i != 0 and i % 100000 == 0:
+            if i != 0 and i % 200000 == 0:
                 print("Extracting panels ... processed {0} rows".format(i))
             if row.panels != []:
                 cur_panel = []
@@ -182,17 +182,17 @@ class DataPreprocessor(object):
 
         new_items = []
         for i, row in self.comments.iterrows():
-            if i != 0 and i % 100000 == 0:
+            if i != 0 and i % 200000 == 0:
                 print("Removing punctuation ... processed {0} rows.".format(i))
             if len(row[colname]) > 0:
-                new_items.append(row[colname].replace(punct, ' '))
+                new_items.append(re.sub(punct,' ',row[colname]))
             else:
                 new_items.append('')
 
         self.comments[colname] = pd.Series(new_items).values
 
     def comments_to_csv(self):
-        self.comments.to_csv('{0}/comments.csv'.format(self.output_path))
+        self.comments.to_csv('{0}/comments.csv'.format(self.output_path), index=False)
 
     def preprocess(self):
         if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
@@ -212,7 +212,9 @@ class DataPreprocessor(object):
         self.extract_noformats()
         self.extract_panels()
         for column in ['comment', 'quotes', 'noformats', 'panels']:
-            self.remove_punctuation(column)
+            self.remove_punctuation(colname=column)
+            # Now remove spaces again from each column
+            self.remove_multiple_spaces(colname=column)
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
