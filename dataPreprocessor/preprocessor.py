@@ -46,6 +46,7 @@ class DataPreprocessor(object):
     def load_comments(self):
         print("Loading Comments dataset ...")
         self.comments = pd.read_csv('{0}/comments.csv'.format(self.input_path), header=0)
+        print("Loading finished - Dataset length is {0} rows".format(len(self.comments)))
 
     def clean_comment_newlines(self):
         # Replace carriage returns and newlines with space
@@ -55,7 +56,6 @@ class DataPreprocessor(object):
     def drop_na_comments(self):
         # If any row doesn't have an actual comment in the "comment" column (N/A) drop it.
         print("Checking if NA comments exist ...")
-        print("Dataset length: {0}".format(len(self.comments)))
         na_comms = self.comments['comment'].isna().sum()
         if na_comms > 0:
             print("Found! Dropping {0} NA comment rows ...".format(na_comms))
@@ -63,6 +63,8 @@ class DataPreprocessor(object):
             # Reset the index as well so that we have no skipped values
             self.comments = self.comments.reset_index(drop=True)
             print("New length: {0}".format(len(self.comments)))
+        else:
+            print("No NA comments found")
 
     def remove_multiple_spaces(self,colname='comment'):
         print("Removing multiple spaces from column '{0}' ...".format(colname))
@@ -96,7 +98,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        print("Extraction of quotes complete. Processed {0} rows".format(i))
+        print("Quote extraction complete. Processed {0} rows".format(i))
 
         # Then set the new quotes to the quotes column and remove quote parts from the comments column
         self.comments['quotes'] = pd.Series(new_items).values
@@ -117,13 +119,13 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        print("Extraction of noformats complete. Processed {0} rows".format(i))
+        print("noformat extraction complete. Processed {0} rows".format(i))
         # Remove noformat parts from the comments column
         self.comments['noformats'] = pd.Series(new_items).values
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
     def extract_code(self):
-        print("Extracting {code} tags. This will take some time ...")
+        print("Extracting code in {code} tags. This will take some time ...")
         self.comments['code'] = self.comments[['comment'][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
         new_items = []
         for i, row in self.comments.iterrows():
@@ -137,7 +139,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        print("Extraction of code complete. Processed {0} rows".format(i))
+        print("Code extraction complete. Processed {0} rows".format(i))
 
         # Remove code parts from the comments column
         self.comments['code'] = pd.Series(new_items).values
@@ -145,7 +147,7 @@ class DataPreprocessor(object):
 
     def extract_panels(self):
         # I am not sure if panels can include nested panels. I will assume no.
-        print("Extracting {panel} tags. This will take some time ...")
+        print("Extracting text in {panel} tags. This will take some time ...")
         self.comments['panels'] = self.comments[['comment'][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
         new_items = []
         for i, row in self.comments.iterrows():
@@ -159,7 +161,7 @@ class DataPreprocessor(object):
             else:
                 new_items.append('')
 
-        print("Extraction of panels complete. Processed {0} rows".format(i))
+        print("Panel extraction complete. Processed {0} rows".format(i))
 
         # Remove panel parts from the comments column
         self.comments['panels'] = pd.Series(new_items).values
@@ -175,20 +177,42 @@ class DataPreprocessor(object):
         self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
 
     def remove_punctuation(self, colname):
-        print("Removing punctuation apart from dashes and underscores ...")
-        print("   ~ column {0}".format(colname))
+        print("Removing punctuation from column {0} (apart from dashes and underscores) ...".format(colname))
         # Remove punctuation except for dashes (-) and underscores(_)
         punct = '|'.join([re.escape(x) for x in string.punctuation.replace('-','').replace('_','')])
 
         new_items = []
         for i, row in self.comments.iterrows():
             if i != 0 and i % 200000 == 0:
-                print("Removing punctuation ... processed {0} rows.".format(i))
+                print("Removing punctuation from {0} ... processed {1} rows".format(colname, i))
             if len(row[colname]) > 0:
                 new_items.append(re.sub(punct,' ',row[colname]))
             else:
                 new_items.append('')
 
+        print("Punctuation removal complete. Processed {0} rows".format(i))
+        self.comments[colname] = pd.Series(new_items).values
+
+    def remove_digit_only_words(self, colname):
+        print("Removing digit-only words from column {0} ...".format(colname))
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i != 0 and i%200000 == 0:
+                print("Removing digit-only words from {0} ... processed {1} rows".format(colname, i))
+            words = row[colname].split()
+            new_items.append(' '.join([word for word in words if not word.isdigit()]))
+        print("Digit-only word removal complete. Processed {0} rows".format(i))
+        self.comments[colname] = pd.Series(new_items).values
+
+    def remove_small_words(self, colname, minlen):
+        print("Removing small words (len < {0}) from column {1} ...".format(minlen, colname))
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i != 0 and i%200000 == 0:
+                print("Removing small words (len < {0}) from {1} ... processed {2} rows".format(minlen, colname, i))
+            words = row[colname].split()
+            new_items.append(' '.join([word for word in words if len(word) >= minlen]))
+        print("Small word removal complete. Processed {0} rows".format(i))
         self.comments[colname] = pd.Series(new_items).values
 
     def comments_to_csv(self):
@@ -215,6 +239,10 @@ class DataPreprocessor(object):
             self.remove_punctuation(colname=column)
             # Now remove spaces again from each column
             self.remove_multiple_spaces(colname=column)
+
+        for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
+            self.remove_digit_only_words(colname=column)
+            self.remove_small_words(colname=column, minlen=2)
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
