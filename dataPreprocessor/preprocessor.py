@@ -215,6 +215,10 @@ class DataPreprocessor(object):
         print("Small word removal complete. Processed {0} rows".format(i))
         self.comments[colname] = pd.Series(new_items).values
 
+    def convert_to_lowercase(self, colname):
+        print("Converting column '{0}' to lowercase ...".format(colname))
+        self.comments[colname] = self.comments[colname].str.lower()
+
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path), index=False)
 
@@ -243,6 +247,7 @@ class DataPreprocessor(object):
         for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
             self.remove_digit_only_words(colname=column)
             self.remove_small_words(colname=column, minlen=2)
+            self.convert_to_lowercase(colname=column)
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
