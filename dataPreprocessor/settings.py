@@ -26,6 +26,19 @@ VALID_ISSUE_TYPES = [
   'Test Preparation',
 ]
 
+WORDS_TO_IGNORE = {
+  '2char': [
+    'll',
+    'hi',
+    'cc',
+    'wh',
+    'im',
+    'p1', 'p2', 'p3', 'p4', 'p5',
+    '1g', '2g', '3g', '4g', '5g', '6g', '7g', '8g',
+    'kb',
+  ]
+}
+
 # Will be overriden by the redacted settings. 
 IGNORE_AUTHOR_GROUPS = [r'.*exampleregexp\.com', r'.*exampleregexp2\.com']
 WIL_USERS_ACTIVE = ['exampleuser1', 'exampleuser2', 'exampleuser3']

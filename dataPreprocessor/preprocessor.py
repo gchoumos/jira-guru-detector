@@ -27,6 +27,7 @@ import string
 import argparse
 import os.path
 import pandas as pd
+from gensim.parsing.preprocessing import STOPWORDS
 from settings import *
 
 import pdb
@@ -38,6 +39,9 @@ class DataPreprocessor(object):
 
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
+        self.stopwords = set(STOPWORDS)
+        for x in WORDS_TO_IGNORE['2char']:
+            self.stopwords.add(x)
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--rebuild", help="rebuild datasets even if they already exist", action="store_true")
@@ -219,6 +223,17 @@ class DataPreprocessor(object):
         print("Converting column '{0}' to lowercase ...".format(colname))
         self.comments[colname] = self.comments[colname].str.lower()
 
+    def remove_stopwords(self, colname):
+        print("Removing stopwords from column {0} ...".format(colname))
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i != 0 and i%200000 == 0:
+                print("Removing stopwords from {0} ... processed {1} rows".format(colname, i))
+            words = row[colname].split()
+            new_items.append(' '.join([word for word in words if word not in self.stopwords]))
+        print("Stopwords removal complete. Processed {0} rows".format(i))
+        self.comments[colname] = pd.Series(new_items).values
+
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path), index=False)
 
@@ -248,6 +263,7 @@ class DataPreprocessor(object):
             self.remove_digit_only_words(colname=column)
             self.remove_small_words(colname=column, minlen=2)
             self.convert_to_lowercase(colname=column)
+            self.remove_stopwords(colname=column)
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
