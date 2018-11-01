@@ -45,6 +45,7 @@ class DataPreprocessor(object):
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--rebuild", help="rebuild datasets even if they already exist", action="store_true")
+        parser.add_argument("--selective", help="prompt before each preprocess step", action="store_true")
         self.args = parser.parse_args()
 
     def load_comments(self):
@@ -234,8 +235,66 @@ class DataPreprocessor(object):
         print("Stopwords removal complete. Processed {0} rows".format(i))
         self.comments[colname] = pd.Series(new_items).values
 
+    def get_proper_answer(self,text="Please respond (y,n): "):
+            answer = input(text).lower().strip()
+            while answer not in ['y', 'n']:
+                print("Please enter a valid answer (y or n)")
+                answer = input(text).lower().strip()
+            if answer == 'y':
+                return True
+            else:
+                return False
+
     def comments_to_csv(self):
         self.comments.to_csv('{0}/comments.csv'.format(self.output_path), index=False)
+
+    def selective_preprocess(self):
+        if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
+            print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
+            return
+
+        self.load_comments()
+        self.clean_comment_newlines()
+        self.drop_na_comments()
+
+        p_url = self.get_proper_answer("Remove urls? (y,n): ")
+        p_email = self.get_proper_answer("Remove emails? (y,n): ")
+        p_spaces = self.get_proper_answer("Remove multiple spaces? (y,n): ")
+        p_fixtags = self.get_proper_answer("Fix bad tag cases? (y,n): ")
+        p_specialtags = self.get_proper_answer("Remove special tags? (y,n): ")
+        p_code = self.get_proper_answer("Extract code? (y,n): ")
+        p_quotes = self.get_proper_answer("Extract quotes? (y,n): ")
+        p_noformats = self.get_proper_answer("Extract noformats? (y,n): ")
+        p_panels = self.get_proper_answer("Extract panels? (y,n): ")
+        p_punct = self.get_proper_answer("Remove punctuation? (y.n): ")
+        p_digits = self.get_proper_answer("Remove digit-only words? (y,n): ")
+        p_small = self.get_proper_answer("Remove small words? (y,n): ")
+        p_lower = self.get_proper_answer("Convert to lowercase? (y,n): ")
+        p_stop = self.get_proper_answer("Remove stopwords? (y,n): ")
+
+        self.remove_urls() if p_url else {}
+        self.remove_emails() if p_email else {}
+        self.remove_multiple_spaces() if p_spaces else {}
+        self.fix_bad_tag_cases() if p_fixtags else {}
+        self.remove_special_tags() if p_specialtags else {}
+        self.extract_code() if p_code else {}
+        self.extract_quotes() if p_quotes else {}
+        self.extract_noformats() if p_noformats else {}
+        self.extract_panels() if p_panels else {}
+        for column in ['comment', 'quotes', 'noformats', 'panels']:
+            self.remove_punctuation(colname=column) if p_punct else {}
+            # Now remove spaces again from each column
+            self.remove_multiple_spaces(colname=column) if p_spaces else {}
+
+        for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
+            self.remove_digit_only_words(colname=column) if p_digits else {}
+            self.remove_small_words(colname=column, minlen=2) if p_small else {}
+            self.convert_to_lowercase(colname=column) if p_lower else {}
+            self.remove_stopwords(colname=column) if p_stop else {}
+
+        # Write out the preprocessed comments file
+        self.comments_to_csv()
+
 
     def preprocess(self):
         if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
@@ -270,7 +329,10 @@ class DataPreprocessor(object):
 
 
 preprocessor = DataPreprocessor()
-preprocessor.preprocess()
+if preprocessor.args.selective:
+    preprocessor.selective_preprocess()
+else:
+    preprocessor.preprocess()
 
 """
 comments.csv (WIL-20000 to WIL-57199)

@@ -16,7 +16,7 @@ To-Do:
 
 
 ## Dataset Format
-First of all, I think that it would be better to have to sets of datasets. The first one will have the "raw" information. For example, the code blocks will be included. In case we want to slightly alter our preprocessing, we can use those datasets so that we avoid having to contact the actual Jira Server through REST. The second set of datasets will contain the processed information.
+First of all, I think that it would be better to have two sets of datasets. The first one will have the "raw" information. For example, the code blocks will be included. In case we want to slightly alter our preprocessing, we can use those datasets so that we avoid having to contact the actual Jira Server through REST. The second set of datasets will contain the processed information.
 
 The current idea of how the data will look like is that there will be a csv for each of the following:
 
