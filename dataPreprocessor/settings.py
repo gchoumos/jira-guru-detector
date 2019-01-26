@@ -41,7 +41,12 @@ WORDS_TO_IGNORE = {
 
 # Will be overriden by the redacted settings. 
 IGNORE_AUTHOR_GROUPS = [r'.*exampleregexp\.com', r'.*exampleregexp2\.com']
-WIL_USERS_ACTIVE = ['exampleuser1', 'exampleuser2', 'exampleuser3']
+WIL_USERS_ACTIVE = {
+  'test1': 'Test User 1',
+  'test2': 'Test User 2',
+  'test3': 'Test User 3',
+}
+
 VALID_USERS = ['exampleuser1','exampleuser2']
 
 try:

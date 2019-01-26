@@ -20,6 +20,9 @@ TODO:
     * I wonder if it would make sense to remove any {quote} tags from the comments *after* extracting them
       to a separate column. If there are any left they are probably remnants of mistakes (for example
       3 {quote} tags in a single comment).
+- Add logging
+- It would probably make sense to remove multiple comments before separating columns. I guess it would
+  decrease overall preprocess time a lot.
 """
 
 import re
@@ -94,7 +97,7 @@ class DataPreprocessor(object):
                 print("Extracting quotes ... processed {0} rows".format(i))
             if row.quotes != []:
                 cur_quotes = []
-                for j, quote in enumerate(row.quotes):
+                for quote in row.quotes:
                     # Create a list with all the matches (without the {quote} tags
                     # That is actually the second element of each tuple
                     cur_quotes.append(quote[1])
@@ -118,7 +121,7 @@ class DataPreprocessor(object):
                 print("Extracting noformats ... processed {0} rows".format(i))
             if row.noformats != []:
                 cur_noformats = []
-                for j, noformat in enumerate(row.noformats):
+                for noformat in row.noformats:
                     cur_noformats.append(noformat[1])
                 new_items.append(' '.join(cur_noformats))
             else:
@@ -138,7 +141,7 @@ class DataPreprocessor(object):
                 print("Extracting code ... processed {0} rows".format(i))
             if row.code != []:
                 cur_code = []
-                for j, code_block in enumerate(row.code):
+                for code_block in row.code:
                     cur_code.append(code_block[1])
                 new_items.append(' '.join(cur_code))
             else:
@@ -160,7 +163,7 @@ class DataPreprocessor(object):
                 print("Extracting panels ... processed {0} rows".format(i))
             if row.panels != []:
                 cur_panel = []
-                for j, panel in enumerate(row.panels):
+                for panel in row.panels:
                     cur_panel.append(panel[1])
                 new_items.append(' '.join(cur_panel))
             else:
