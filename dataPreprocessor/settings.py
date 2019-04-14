@@ -3,6 +3,8 @@
 DP_SETTINGS = {
     'input_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
     'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed',
+    'input_file': 'comments.csv',
+    'output_file': 'comments.csv',
 }
 
 # Issue types not in this list will be discarded. If it's empty, include them all.

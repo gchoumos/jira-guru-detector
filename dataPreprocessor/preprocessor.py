@@ -23,6 +23,7 @@ TODO:
 - Add logging
 - It would probably make sense to remove multiple comments before separating columns. I guess it would
   decrease overall preprocess time a lot.
+- Stemming is probably worth considering. There are tons of eligible cases.
 """
 
 import re
@@ -42,6 +43,8 @@ class DataPreprocessor(object):
 
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
+        self.input_file = DP_SETTINGS['input_file']
+        self.output_file = DP_SETTINGS['output_file']
         self.stopwords = set(STOPWORDS)
         for x in WORDS_TO_IGNORE['2char']:
             self.stopwords.add(x)
@@ -53,7 +56,8 @@ class DataPreprocessor(object):
 
     def load_comments(self):
         print("Loading Comments dataset ...")
-        self.comments = pd.read_csv('{0}/comments.csv'.format(self.input_path), header=0)
+        self.comments = pd.read_csv('{0}/{1}'
+            .format(self.input_path,self.input_file), header=0)
         print("Loading finished - Dataset length is {0} rows".format(len(self.comments)))
 
     def clean_comment_newlines(self):
@@ -249,10 +253,11 @@ class DataPreprocessor(object):
                 return False
 
     def comments_to_csv(self):
-        self.comments.to_csv('{0}/comments.csv'.format(self.output_path), index=False)
+        self.comments.to_csv('{0}/{1}'
+            .format(self.output_path,self.output_file), index=False)
 
     def selective_preprocess(self):
-        if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
+        if os.path.isfile("{0}/{1}".format(self.output_path,self.output_file)) and not self.args.rebuild:
             print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
             return
 
@@ -300,7 +305,8 @@ class DataPreprocessor(object):
 
 
     def preprocess(self):
-        if os.path.isfile("{0}/comments.csv".format(self.output_path)) and not self.args.rebuild:
+        if os.path.isfile("{0}/{1}"
+            .format(self.output_path,self.output_file)) and not self.args.rebuild:
             print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
             return
 
@@ -318,7 +324,7 @@ class DataPreprocessor(object):
         self.extract_panels()
         for column in ['comment', 'quotes', 'noformats', 'panels']:
             self.remove_punctuation(colname=column)
-            # Now remove spaces again from each column
+            # Now remove spaces again from each column - Could we avoid having to do this again?
             self.remove_multiple_spaces(colname=column)
 
         for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
