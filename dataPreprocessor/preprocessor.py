@@ -24,12 +24,20 @@ TODO:
 - It would probably make sense to remove multiple comments before separating columns. I guess it would
   decrease overall preprocess time a lot.
 - Stemming is probably worth considering. There are tons of eligible cases.
+- Looks like the comments_to_csv function is not necessary as it just make a single call. So maybe better to
+  just make the call instead of triggering a new function to do this. Having a separate function would make
+  more sense if there was more logic involved.
+- I don't see any point having the check for the preprocessed files already existing and the --rebuild argument
+  both in the preprocess and the selective_preprocess functions. We are repeating ourselves. This check should
+  be made only once, before preprocess or selective_preprocess is called.
+- Maybe I should consider removing the selective preprocess at some point completely.
 """
 
 import re
 import string
 import argparse
 import os.path
+import spacy
 import pandas as pd
 from gensim.parsing.preprocessing import STOPWORDS
 from settings import *
@@ -242,6 +250,20 @@ class DataPreprocessor(object):
         print("Stopwords removal complete. Processed {0} rows".format(i))
         self.comments[colname] = pd.Series(new_items).values
 
+    def lemmatize(self, colname):
+        print("Lemmatizing column {0} ...".format(colname))
+        new_items = []
+        for i, row in self.comments.iterrows():
+            if i != 0 and i%200000 == 0:
+                print("Lemmatizing {0} ... processed {1} rows".format(colname, i))
+            if len(row[colname]) > 0:
+                lemmata = self.lemmatizer(row[colname]) # This and next could be one row but it's easier to read
+                new_items.append(' '.join([x.lemma_ for x in lemmata]))
+            else:
+                new_items.append('')
+        print("Lemmatization of {0} complete. Processed {1} rows".format(colname,i))
+        self.comments[colname] = pd.Series(new_items).values
+
     def get_proper_answer(self,text="Please respond (y,n): "):
             answer = input(text).lower().strip()
             while answer not in ['y', 'n']:
@@ -252,9 +274,13 @@ class DataPreprocessor(object):
             else:
                 return False
 
-    def comments_to_csv(self):
-        self.comments.to_csv('{0}/{1}'
-            .format(self.output_path,self.output_file), index=False)
+    def comments_to_csv(self, columns=[]):
+        if len(columns) == 0:
+            self.comments.to_csv('{0}/{1}'
+                .format(self.output_path,self.output_file), index=False)
+        else:
+            self.comments.to_csv('{0}/{1}_only.csv'
+                .format(self.output_path,'-'.join(columns)),columns=columns)
 
     def selective_preprocess(self):
         if os.path.isfile("{0}/{1}".format(self.output_path,self.output_file)) and not self.args.rebuild:
@@ -279,6 +305,7 @@ class DataPreprocessor(object):
         p_small = self.get_proper_answer("Remove small words? (y,n): ")
         p_lower = self.get_proper_answer("Convert to lowercase? (y,n): ")
         p_stop = self.get_proper_answer("Remove stopwords? (y,n): ")
+        p_lemma = self.get_proper_answer("Apply lemmatization in comments? (y,n): ")
 
         self.remove_urls() if p_url else {}
         self.remove_emails() if p_email else {}
@@ -299,6 +326,12 @@ class DataPreprocessor(object):
             self.remove_small_words(colname=column, minlen=2) if p_small else {}
             self.convert_to_lowercase(colname=column) if p_lower else {}
             self.remove_stopwords(colname=column) if p_stop else {}
+
+        if p_lemma == True:
+            self.lemmatizer = spacy.load('en')
+            self.lemmatize(colname='comment')
+            # Write out comment column only for inspection
+            self.comments_to_csv(['comment'])
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
@@ -322,6 +355,7 @@ class DataPreprocessor(object):
         self.extract_quotes()
         self.extract_noformats()
         self.extract_panels()
+
         for column in ['comment', 'quotes', 'noformats', 'panels']:
             self.remove_punctuation(colname=column)
             # Now remove spaces again from each column - Could we avoid having to do this again?
@@ -333,8 +367,16 @@ class DataPreprocessor(object):
             self.convert_to_lowercase(colname=column)
             self.remove_stopwords(colname=column)
 
+        # Initialize lemmatizer and apply lemmatization to the comments.
+        # (would be good to do this for panels and quotes maybe)
+        self.lemmatizer = spacy.load('en')
+        self.lemmatize(colname='comment')
+
         # Write out the preprocessed comments file
         self.comments_to_csv()
+
+        # Write out comment column only for inspection
+        self.comments_to_csv(['comment'])
 
 
 preprocessor = DataPreprocessor()
@@ -342,14 +384,3 @@ if preprocessor.args.selective:
     preprocessor.selective_preprocess()
 else:
     preprocessor.preprocess()
-
-"""
-comments.csv (WIL-20000 to WIL-57199)
-
-
-Original            - Size: 782056 KB - Lines: 12864079
-No newlines         - Size: 709968 KB - Lines:   456201
-No URLs             - Size: 698696 KB
-No emails           - Size: 695204 KB
-Quote separation    - Size: 
-"""

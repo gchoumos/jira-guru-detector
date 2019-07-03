@@ -1,13 +1,15 @@
 """
 TO DO
 
+- Make sure that you get a warning when the output files already exist. Otherwise they will get appended
+  and noone will easily notice. Maybe after warning the user it's worth considering either overwriting
+  the already existing files OR just exiting without doing anything.
 - I think we also need the issue type to be stored along with the comments. That's in case we want to
   ignore the ones that come from incidents.
 - If assignee is different than the creator (or reporter) then maybe we could insert a line for both
   (if they are openbet of course). This will also benefit us in cases that the ticket has been raised
   by WH, which means that the summary line will be ignored.
 - What about using creator instead of reporter??
-- We may be only getting a maximum of 50 comments per issue. Have a look at this.
 - Mention the captcha challenge case that leads to a login error.
 - I should make sure that the csv files are generated in the proper directory. Currently I only give
   the name. This will be useful to later check if they are already there so we can ask if the user wants
