@@ -17,6 +17,8 @@ UNUSED_COLUMNS = [
 
 IGNORE_AUTHOR_GROUPS = []
 
+APPEARANCE_THRESHOLD = 3
+
 # Redacted settings
 try:
     from redacted import IGNORE_AUTHOR_GROUPS

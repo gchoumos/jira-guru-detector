@@ -1,7 +1,25 @@
+# This is an issue that needs to be taken into consideration with regards to Cross Validation
+# https://github.com/scikit-learn/scikit-learn/issues/11777
+# In multiclass problems with classes being so many this is a common case, so we may want to
+# consider excluding some labels (and their comments) from the cross validation process.
+
 import re
 import pandas as pd
+import numpy as np
 
 from settings import *
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.feature_selection import SelectFromModel
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import log_loss, make_scorer
+
+from feature_union_sklearn import (
+                            ItemSelector,
+                            MainExtractor
+                        )
 
 # Tool to decide if author belongs to the ignored group
 def ignored(author):
@@ -29,9 +47,66 @@ if len(UNUSED_COLUMNS) > 0:
 if len(IGNORE_AUTHOR_GROUPS) > 0:
     rows_before = data.shape[0]
     data = data[data.apply(lambda row: ignored(row.author), axis=1) == False]
-    print("CONFIG: Dropped {0} comments by ignored Author groups:"
+    print("CONFIG: Dropped {0} comments by ignored Author groups."
             .format(rows_before-data.shape[0]))
+
+# Find authors will less comments than the configured appearance threshold
+if APPEARANCE_THRESHOLD > 0:
+    all_authors = list(data[data.comment.notnull()]['author'].unique())
+    author_freqs = data.groupby('author').comment.nunique().sort_values()
+    rejection_list = author_freqs >= APPEARANCE_THRESHOLD
+    rare_authors = [x for x in rejection_list.index if rejection_list[x] == False]
+    rows_before = data.shape[0]
+    data = data[data.apply(lambda row: row.author not in rare_authors, axis =1) == True]
+    print("CONFIG: Dropped {0} comments by rare Authors (less than {1} comments)."
+            .format(rows_before-data.shape[0],APPEARANCE_THRESHOLD))
 
 # Index has many holes now, maybe a good idea to reset it
 data.reset_index(drop=True, inplace=True)
 
+# Get the comments as a feature by dropping the na rows
+tr_comments = data[data.comment.notnull()]['comment']
+
+training = np.dstack([
+    tr_comments,
+])
+training = training[:][0]
+
+# Get the labels. In our case, they are persons.
+tr_labels = data[data.comment.notnull()]['author']
+
+
+# The logistic regression for comments
+logr_comments = LogisticRegression(penalty='l2', tol=1e-05)
+
+thres_all = None
+pipeline = Pipeline([
+    ('main_extractor', MainExtractor()),
+
+    # Use FeatureUnion to combine the features
+    ('union', FeatureUnion(
+        transformer_list=[
+            # Weigh them separately
+            ('comment_unigrams', Pipeline([
+                ('selector', ItemSelector(key='comment')),
+                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.5, min_df=0,ngram_range=(1,1))),
+                ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
+                ('sfm_comm_uni', SelectFromModel(logr_comments,threshold=thres_all)),
+            ])),
+        ],
+
+        # Weight components in FeatureUnion - Here are the optimals
+        transformer_weights={
+            'comment_unigrams': 1.00,
+        },
+    )),
+
+    ('logr', LogisticRegression(penalty='l2', tol=0.0001)),
+])
+
+parameters = {}
+
+# The default scorer is the accuracy, but we want the log loss in our case.
+log_loss_scorer = make_scorer(log_loss, greater_is_better=False, needs_proba=True)
+grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=10,scoring=log_loss_scorer)
+grid_search.fit(training,tr_labels)

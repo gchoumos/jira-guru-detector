@@ -5,4 +5,5 @@ comments.csv
 tst.csv
 dataPreprocessor/redacted.py
 guruDetector/redacted.py
+guruDetector/results_info
 .vscode
