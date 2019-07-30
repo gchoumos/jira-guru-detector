@@ -31,6 +31,9 @@ TODO:
   both in the preprocess and the selective_preprocess functions. We are repeating ourselves. This check should
   be made only once, before preprocess or selective_preprocess is called.
 - Maybe I should consider removing the selective preprocess at some point completely.
+- I am not sure if I should continue NOT replacing dashes. If we apply the same preprocess to the user input,
+  then there is no point probably. Also, it looks like it's going to make the data clearer. Underscores should
+  stay though.
 """
 
 import re
@@ -274,13 +277,14 @@ class DataPreprocessor(object):
             else:
                 return False
 
+    """ Save comments to a CSV file with the selected columns. Save all columns if none is specified. """
     def comments_to_csv(self, columns=[]):
         if len(columns) == 0:
             self.comments.to_csv('{0}/{1}'
                 .format(self.output_path,self.output_file), index=False)
         else:
             self.comments.to_csv('{0}/{1}_only.csv'
-                .format(self.output_path,'-'.join(columns)),columns=columns)
+                .format(self.output_path,'-'.join(columns)),columns=columns, index=False)
 
     def selective_preprocess(self):
         if os.path.isfile("{0}/{1}".format(self.output_path,self.output_file)) and not self.args.rebuild:
