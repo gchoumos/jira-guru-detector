@@ -102,12 +102,20 @@ pipeline = Pipeline([
                 ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
                 ('sfm_comm_bi', SelectFromModel(logr_comments,threshold=thres_all)),
             ])),
+
+            ('comment_trigrams', Pipeline([
+                ('selector', ItemSelector(key='comment')),
+                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.6, min_df=0.0001,ngram_range=(3,3))),
+                ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
+                ('sfm_comm_tri', SelectFromModel(logr_comments,threshold=thres_all)),
+            ])),
         ],
 
         # Weight components in FeatureUnion - Here are the optimals
-        transformer_weights={ # Best combination till now - 2.2223
+        transformer_weights={ # Best combination till now - 2.2057
             'comment_unigrams': 1.10, # 1.10
-            'comment_bigrams':  1.00, # 1.00
+            'comment_bigrams':  0.90, # 1.00
+            'comment_trigrams': 1.00, # 1.00
         },
     )),
 
@@ -121,5 +129,8 @@ log_loss_scorer = make_scorer(log_loss, greater_is_better=False, needs_proba=Tru
 grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=10,scoring=log_loss_scorer)
 grid_search.fit(training,tr_labels)
 
+# Display the (best) score of the model.
+print("Best score: %0.3f" % grid_search.best_score_)
+
 # Save the model to a file
-pickle.dump('model.save','wb')
+pickle.dump(grid_search,open('model.save','wb'))
