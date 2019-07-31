@@ -4,6 +4,7 @@
 # consider excluding some labels (and their comments) from the cross validation process.
 
 import re
+import pickle
 import pandas as pd
 import numpy as np
 
@@ -86,18 +87,27 @@ pipeline = Pipeline([
     # Use FeatureUnion to combine the features
     ('union', FeatureUnion(
         transformer_list=[
-            # Weigh them separately
+            # Comment unigrams
             ('comment_unigrams', Pipeline([
                 ('selector', ItemSelector(key='comment')),
-                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.5, min_df=0,ngram_range=(1,1))),
+                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.5, min_df=0.00001,ngram_range=(1,1))),
                 ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
                 ('sfm_comm_uni', SelectFromModel(logr_comments,threshold=thres_all)),
+            ])),
+
+            # Comment bigrams
+            ('comment_bigrams', Pipeline([
+                ('selector', ItemSelector(key='comment')),
+                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.6, min_df=0.001,ngram_range=(2,2))),
+                ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
+                ('sfm_comm_bi', SelectFromModel(logr_comments,threshold=thres_all)),
             ])),
         ],
 
         # Weight components in FeatureUnion - Here are the optimals
-        transformer_weights={
-            'comment_unigrams': 1.00,
+        transformer_weights={ # Best combination till now - 2.2223
+            'comment_unigrams': 1.10, # 1.10
+            'comment_bigrams':  1.00, # 1.00
         },
     )),
 
@@ -110,3 +120,6 @@ parameters = {}
 log_loss_scorer = make_scorer(log_loss, greater_is_better=False, needs_proba=True)
 grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=10,scoring=log_loss_scorer)
 grid_search.fit(training,tr_labels)
+
+# Save the model to a file
+pickle.dump('model.save','wb')
