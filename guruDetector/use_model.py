@@ -36,6 +36,6 @@ def search(text):
     n = 10
     print("Top {0} results:".format(n))
     for i in range(n):
-        print("{0}. {1} - Probability: {2}".format(i,ordered[i][0],ordered[i][1]))
+        print("{0}. {1} - {2:.2f}%".format(i+1,ordered[i][0],ordered[i][1]*100))
 
 # regex for hexadecimal words to be removed \s([a-f]|[0-9]){5,}\s
