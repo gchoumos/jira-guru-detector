@@ -9,6 +9,7 @@ ACTIVE_ONLY = True
 UNUSED_COLUMNS = [
     'key',
     'created',
+    'issuetype',
     'code',
     'quotes',
     'noformats',

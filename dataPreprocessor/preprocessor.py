@@ -373,8 +373,8 @@ class DataPreprocessor(object):
 
         # Initialize lemmatizer and apply lemmatization to the comments.
         # (would be good to do this for panels and quotes maybe)
-        self.lemmatizer = spacy.load('en')
-        self.lemmatize(colname='comment')
+        # self.lemmatizer = spacy.load('en')
+        # self.lemmatize(colname='comment')
 
         # Write out the preprocessed comments file
         self.comments_to_csv()

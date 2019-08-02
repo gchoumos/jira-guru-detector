@@ -77,7 +77,7 @@ class DataLoader(object):
 
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
-        comm_cols = ['key','created','author','active','comment']
+        comm_cols = ['key','created','issuetype','author','active','comment']
         summ_name = '{0}/summaries.csv'.format(self.output_path)
         comm_name = '{0}/comments.csv'.format(self.output_path)
 
@@ -121,6 +121,7 @@ class DataLoader(object):
                 com_data.append({
                     'key': issue.key,
                     'created': issue.fields.comment.comments[i].created[:10],
+                    'issuetype': issue.fields.issuetype.name,
                     'author': issue.fields.comment.comments[i].author.name,
                     'active': issue.fields.comment.comments[i].author.active,
                     'comment': issue.fields.comment.comments[i].body,
