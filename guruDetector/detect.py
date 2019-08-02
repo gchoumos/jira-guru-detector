@@ -112,9 +112,9 @@ pipeline = Pipeline([
         ],
 
         # Weight components in FeatureUnion - Here are the optimals
-        transformer_weights={ # Best combination till now - 2.2057
-            'comment_unigrams': 1.10, # 1.10
-            'comment_bigrams':  0.90, # 1.00
+        transformer_weights={ # Best combination till now - 2.1716
+            'comment_unigrams': 1.30, # 1.30
+            'comment_bigrams':  0.90, # 0.90
             'comment_trigrams': 1.00, # 1.00
         },
     )),
