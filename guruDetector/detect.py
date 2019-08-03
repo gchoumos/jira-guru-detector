@@ -3,6 +3,8 @@
 # In multiclass problems with classes being so many this is a common case, so we may want to
 # consider excluding some labels (and their comments) from the cross validation process.
 
+# Tested and works fine with scikit learn versions 0.19.1 and 0.21.3
+
 import re
 import pickle
 import pandas as pd
@@ -89,7 +91,8 @@ tr_labels = data[data.comment.notnull()]['author']
 
 
 # The logistic regression for comments
-logr_comments = LogisticRegression(penalty='l2', tol=1e-05)
+# multi_class to 'auto' instead of the default 'ovr' improved the fit (probably because 'auto` eventually 'selects `multinomial`)
+logr_comments = LogisticRegression(penalty='l2', tol=1e-05, multi_class='auto')
 
 thres_all = None
 pipeline = Pipeline([
@@ -114,30 +117,31 @@ pipeline = Pipeline([
                 ('sfm_comm_bi', SelectFromModel(logr_comments,threshold=thres_all)),
             ])),
 
-            ('comment_trigrams', Pipeline([
-                ('selector', ItemSelector(key='comment')),
-                ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.6, min_df=0.0001,ngram_range=(3,3))),
-                ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
-                ('sfm_comm_tri', SelectFromModel(logr_comments,threshold=thres_all)),
-            ])),
+            # ('comment_trigrams', Pipeline([
+            #     ('selector', ItemSelector(key='comment')),
+            #     ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.6, min_df=0.0001,ngram_range=(3,3))),
+            #     ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
+            #     ('sfm_comm_tri', SelectFromModel(logr_comments,threshold=thres_all)),
+            # ])),
         ],
 
         # Weight components in FeatureUnion - Here are the optimals
-        transformer_weights={ # Best combination till now - 2.1716
-            'comment_unigrams': 1.30, # 1.30
-            'comment_bigrams':  0.90, # 0.90
-            'comment_trigrams': 1.00, # 1.00
+        transformer_weights={ # Best combination till now - 1.504
+            'comment_unigrams': 1.40, # 1.40
+            'comment_bigrams':  1.00, # 0.90 # 1.00
+            # 'comment_trigrams': 1.00, # 1.00
         },
     )),
 
-    ('logr', LogisticRegression(penalty='l2', tol=0.0001)),
+    ('logr', LogisticRegression(penalty='l2', tol=0.0001, multi_class='auto')),
 ])
 
 parameters = {}
 
 # The default scorer is the accuracy, but we want the log loss in our case.
 log_loss_scorer = make_scorer(log_loss, greater_is_better=False, needs_proba=True)
-grid_search = GridSearchCV(pipeline, parameters, n_jobs=-1, verbose=10,scoring=log_loss_scorer)
+
+grid_search = GridSearchCV(pipeline, parameters, cv=3, n_jobs=-1, verbose=10, scoring=log_loss_scorer)
 grid_search.fit(training,tr_labels)
 
 # Display the (best) score of the model.
