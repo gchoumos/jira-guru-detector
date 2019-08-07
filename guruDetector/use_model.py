@@ -2,27 +2,9 @@ import pickle
 import numpy as np
 
 ## Reload the model
-model = pickle.load(open('model_2_1720.save','rb'))
+model = pickle.load(open('model_1_5310.save','rb'))
 
-# Test case for me
-test_george = np.dstack([
-    'telebet onshore migrate search shop account binns'
-])
-test_george = np.array([t[0] for t in test_george])
-y_george = model.predict_proba(test_george)
-y_george_pred = model.predict(test_george)
-
-# Check the probabilities
-y_george
-# Check the prediction - It predicted me indeed!
-y_george_pred
-
-print("Predicted {0} with probability {1}".format(y_george_pred,y_george[0][np.where(model.classes_==y_george_pred)[0][0]]))
-
-##############
-# Another test
-##############
-def search(text):
+def detect_guru(text):
     test = np.dstack([
         text
     ])
