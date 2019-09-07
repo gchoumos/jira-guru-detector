@@ -1,10 +1,12 @@
 import pickle
 import numpy as np
+from texttable import Texttable
 
 ## Reload the model
-model = pickle.load(open('model_1_5310.save','rb'))
+model = pickle.load(open('model_1_5370.save','rb'))
 
-def detect_guru(text):
+def detect_guru(text, n=10):
+    t = Texttable()
     test = np.dstack([
         text
     ])
@@ -13,11 +15,32 @@ def detect_guru(text):
     y_pred = model.predict(test)
     test_labels = model.classes_
     test_probs = y
-    ordered = [[test_labels[i],test_probs[0][i]] for i in range(test_labels.shape[0])]
+    ordered = [[test_labels[i],test_probs[0][i],test_probs[0][i]] for i in range(test_labels.shape[0])]
     ordered.sort(key=lambda x: x[1],reverse=True)
-    n = 10
     print("Top {0} results:".format(n))
     for i in range(n):
-        print("{0}. {1} - {2:.2f}%".format(i+1,ordered[i][0],ordered[i][1]*100))
+        if ordered[i][1]*100 > 40:
+            ordered[i][2] = "Absolute Guru"
+        elif ordered[i][1]*100 > 30:
+            ordered[i][2] = "Guru"
+        elif ordered[i][1]*100 > 20:
+            ordered[i][2] = "*****"
+        elif ordered[i][1]*100 > 10:
+            ordered[i][2] = "****"
+        elif ordered[i][1]*100 > 5:
+            ordered[i][2] = "***"
+        elif ordered[i][1]*100 > 2:
+            ordered[i][2] = "**"
+        elif ordered[i][1]*100 > 1:
+            ordered[i][2] = "*"
+        else:
+            ordered[i][2] = "Not likely"
+    t.header(['','Name','Guru Meter'])
+    for i in range(n):
+        t.add_row(['{0}.'.format(i+1),ordered[i][0],ordered[i][2]])
+        # print("{0}. {1} - {2}".format(i+1,ordered[i][0],ordered[i][2]))
+        # print("{0}. {1} - {2:.2f}% - {3}".format(i+1,ordered[i][0],ordered[i][1]*100,ordered[i][2]))
+    print(t.draw())
 
 # regex for hexadecimal words to be removed \s([a-f]|[0-9]){5,}\s
+
