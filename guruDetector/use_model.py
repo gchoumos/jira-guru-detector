@@ -3,7 +3,7 @@ import numpy as np
 from texttable import Texttable
 
 ## Reload the model
-model = pickle.load(open('model_1_5370.save','rb'))
+model = pickle.load(open('latest_model','rb'))
 
 def detect_guru(text, n=10):
     t = Texttable()

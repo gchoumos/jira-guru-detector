@@ -148,4 +148,4 @@ grid_search.fit(training,tr_labels)
 print("Best score: %0.3f" % grid_search.best_score_)
 
 # Save the model to a file
-pickle.dump(grid_search,open('model.save','wb'))
+pickle.dump(grid_search,open('model_{0:.3f}.save'.format(abs(grid_search.best_score_)),'wb'))

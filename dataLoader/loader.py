@@ -21,6 +21,7 @@ import pprint
 import json
 import csv
 import re
+import os
 from jira import JIRA
 from settings import SETTINGS, BATCH_INTERVALS
 
@@ -81,6 +82,10 @@ class DataLoader(object):
         summ_name = '{0}/summaries.csv'.format(self.output_path)
         comm_name = '{0}/comments.csv'.format(self.output_path)
 
+        # Create output folders if they don't already exist
+        if not os.path.isdir(self.output_path):
+            os.makedirs(self.output_path)
+
         # It's ugly I know
         for i in range(0,len(BATCH_INTERVALS),2):
             batchFrom = BATCH_INTERVALS[i]
@@ -90,7 +95,7 @@ class DataLoader(object):
 
             # Get the info we want for the "summaries" and "comments" csv files from this batch
             summaries = self.get_summary_data(cur_batch)
-            #  'a' to append instead of overwriting
+            # 'a' to append instead of overwriting
             with open(summ_name,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=summ_cols)
                 writer.writeheader()

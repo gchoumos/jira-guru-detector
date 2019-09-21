@@ -39,7 +39,7 @@ TODO:
 import re
 import string
 import argparse
-import os.path
+import os
 import spacy
 import pandas as pd
 from gensim.parsing.preprocessing import STOPWORDS
@@ -279,6 +279,10 @@ class DataPreprocessor(object):
 
     """ Save comments to a CSV file with the selected columns. Save all columns if none is specified. """
     def comments_to_csv(self, columns=[]):
+        # Create output folders if they don't already exist
+        if not os.path.isdir(self.output_path):
+            os.makedirs(self.output_path)
+
         if len(columns) == 0:
             self.comments.to_csv('{0}/{1}'
                 .format(self.output_path,self.output_file), index=False)

@@ -7,3 +7,5 @@ dataPreprocessor/redacted.py
 guruDetector/redacted.py
 guruDetector/results_info
 .vscode
+**/*.save
+**/latest_model
