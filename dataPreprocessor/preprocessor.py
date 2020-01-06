@@ -54,8 +54,10 @@ class DataPreprocessor(object):
 
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
-        self.input_file = DP_SETTINGS['input_file']
-        self.output_file = DP_SETTINGS['output_file']
+        self.comms_input_file = DP_SETTINGS['comms_input_file']
+        self.comms_output_file = DP_SETTINGS['comms_output_file']
+        self.summs_input_file = DP_SETTINGS['summs_input_file']
+        self.summs_output_file = DP_SETTINGS['summs_output_file']
         self.stopwords = set(STOPWORDS)
         for x in WORDS_TO_IGNORE['2char']:
             self.stopwords.add(x)
@@ -68,46 +70,76 @@ class DataPreprocessor(object):
     def load_comments(self):
         print("Loading Comments dataset ...")
         self.comments = pd.read_csv('{0}/{1}'
-            .format(self.input_path,self.input_file), header=0)
-        print("Loading finished - Dataset length is {0} rows".format(len(self.comments)))
+            .format(self.input_path,self.comms_input_file), header=0)
+        print("Loading finished - Comments Dataset length is {0} rows".format(len(self.comments)))
 
-    def clean_comment_newlines(self):
+    def load_summaries(self):
+        print("Loading Summaries dataset ...")
+        self.summaries = pd.read_csv('{0}/{1}'
+            .format(self.input_path,self.summs_input_file), header=0)
+        print("Loading finished - Summaries Dataset length is {0} rows".format(len(self.summaries)))
+
+    def clean_newlines(self, dataset='comments', colname='comment'):
         # Replace carriage returns and newlines with space
-        print("Removing newlines and carriage returns ...")
-        self.comments[['comment']] = self.comments[['comment']].replace([r'\n',r'\r'],' ', regex=True)
+        print("Removing newlines and carriage returns. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace([r'\n',r'\r'],' ', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace([r'\n',r'\r'],' ', regex=True)
 
-    def drop_na_comments(self):
-        # If any row doesn't have an actual comment in the "comment" column (N/A) drop it.
-        print("Checking if NA comments exist ...")
-        na_comms = self.comments['comment'].isna().sum()
-        if na_comms > 0:
-            print("Found! Dropping {0} NA comment rows ...".format(na_comms))
-            self.comments = self.comments.dropna(subset=['comment'])
-            # Reset the index as well so that we have no skipped values
-            self.comments = self.comments.reset_index(drop=True)
-            print("New length: {0}".format(len(self.comments)))
+    def drop_na(self, dataset='comments', colname='comment'):
+        # If any row doesn't have value for the column (so it's N/A), then drop it.
+        print("Checking if NAs exist. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            na_num = self.comments[colname].isna().sum()
+        elif dataset == 'summaries':
+            na_num = self.summaries[colname].isna().sum()
+        if na_num > 0:
+            print("Found! Dropping {0} rows with NA values for column: {1}...".format(na_num,colname))
+            if dataset == 'comments':
+                self.comments = self.comments.dropna(subset=[colname])
+                # Reset the index as well so that we have no skipped values
+                self.comments = self.comments.reset_index(drop=True)
+                print("New length: {0}".format(len(self.comments)))
+            elif dataset == 'summaries':
+                self.summaries = self.summaries.dropna(subset=[colname])
+                self.summaries = self.summaries.reset_index(drop=True)
         else:
-            print("No NA comments found")
+            print("No NAs found")
 
-    def remove_multiple_spaces(self,colname='comment'):
-        print("Removing multiple spaces from column '{0}' ...".format(colname))
-        self.comments[[colname]] = self.comments[[colname]].replace(r'\s+',' ', regex=True)
+    def remove_multiple_spaces(self, dataset='comments', colname='comment'):
+        print("Removing multiple spaces. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace(r'\s+',' ', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'\s+',' ', regex=True)
 
-    def remove_urls(self):
-        print("Removing URLs ...")
-        self.comments[['comment']] = self.comments[['comment']].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
+    def remove_urls(self, dataset='comments', colname='comment'):
+        print("Removing URLs. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
 
-    def remove_emails(self):
-        print("Removing e-mails ...")
-        self.comments[['comment']] = self.comments[['comment']].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
+    def remove_emails(self, dataset='comments', colname='comment'):
+        print("Removing e-mails. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
 
-    def extract_quotes(self):
-        print("Extracting text in {quote} tags. This will take some time ...")
-        # Create the new column with the quotes as returned by findall (list of tuples)
-        self.comments['quotes'] = self.comments[['comment'][0]].str.findall(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})')
-        # Iterate through the new column to keep only what we need from the tuples
+    def extract_quotes(self, dataset='comments', colname='comment'):
+        print("Extracting text in {quote} tags. Dataset {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        # Create the new column with the quotes as returned by findall (list of tuples)
+        if dataset == 'comments':
+            self.comments['quotes'] = self.comments[[colname][0]].str.findall(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})')
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            self.summaries['quotes'] = self.summaries[[colname][0]].str.findall(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})')
+            loop = self.summaries.iterrows()
+        # Iterate through the new column to keep only what we need from the tuples
+        for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting quotes ... processed {0} rows".format(i))
             if row.quotes != []:
@@ -122,16 +154,24 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("Quote extraction complete. Processed {0} rows".format(i))
+        # Then set the new quotes to the quotes column and remove quote parts from the given column
+        if dataset == 'comments':
+            self.comments['quotes'] = pd.Series(new_items).values
+            self.comments[[colname]] = self.comments[[colname]].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries['quotes'] = pd.Series(new_items).values
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
 
-        # Then set the new quotes to the quotes column and remove quote parts from the comments column
-        self.comments['quotes'] = pd.Series(new_items).values
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
-
-    def extract_noformats(self):
-        print("Extracting text in {noformat} tags. This will take some time ...")
-        self.comments['noformats'] = self.comments[['comment'][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
+    def extract_noformats(self, dataset='comments', colname='comment'):
+        print("Extracting text in {noformat} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            self.comments['noformats'] = self.comments[[colname][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            self.summaries['noformats'] = self.summaries[[colname][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting noformats ... processed {0} rows".format(i))
             if row.noformats != []:
@@ -143,15 +183,24 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("noformat extraction complete. Processed {0} rows".format(i))
-        # Remove noformat parts from the comments column
-        self.comments['noformats'] = pd.Series(new_items).values
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
+        # Remove noformat parts from the given column
+        if dataset == 'comments':
+            self.comments['noformats'] = pd.Series(new_items).values
+            self.comments[[colname]] = self.comments[[colname]].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries['noformats'] = pd.Series(new_items).values
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
-    def extract_code(self):
-        print("Extracting code in {code} tags. This will take some time ...")
-        self.comments['code'] = self.comments[['comment'][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
+    def extract_code(self, dataset='comments', colname='comment'):
+        print("Extracting {code} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            self.comments['code'] = self.comments[[colname][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            self.summaries['code'] = self.summaries[[colname][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting code ... processed {0} rows".format(i))
             if row.code != []:
@@ -163,17 +212,25 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("Code extraction complete. Processed {0} rows".format(i))
+        # Remove code parts from the column and move them to a new one
+        if dataset == 'comments':
+            self.comments['code'] = pd.Series(new_items).values
+            self.comments[[colname]] = self.comments[[colname]].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries['code'] = pd.Series(new_items).values
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
 
-        # Remove code parts from the comments column
-        self.comments['code'] = pd.Series(new_items).values
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
-
-    def extract_panels(self):
+    def extract_panels(self, dataset='comments', colname='comment'):
         # I am not sure if panels can include nested panels. I will assume no.
-        print("Extracting text in {panel} tags. This will take some time ...")
-        self.comments['panels'] = self.comments[['comment'][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
+        print("Extracting text in {panel} tags. Dataset: {0}, Column: {1}. This will take some time ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            self.comments['panels'] = self.comments[[colname][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            self.summaries['panels'] = self.summaries[[colname][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting panels ... processed {0} rows".format(i))
             if row.panels != []:
@@ -185,27 +242,39 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("Panel extraction complete. Processed {0} rows".format(i))
+        # Remove panel parts from the given column and move them to a new one
+        if dataset == 'comments':
+            self.comments['panels'] = pd.Series(new_items).values
+            self.comments[[colname]] = self.comments[[colname]].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries['panels'] = pd.Series(new_items).values
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
 
-        # Remove panel parts from the comments column
-        self.comments['panels'] = pd.Series(new_items).values
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
-
-    def fix_bad_tag_cases(self):
+    def fix_bad_tag_cases(self, dataset='comments', colname='comment'):
         # More will probably be added
-        print("Fixing bad tag cases ...")
-        self.comments[['comment']] = self.comments[['comment']].replace('{Noformat', '{noformat', regex=True)
+        print("Fixing bad tag cases. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace('{Noformat', '{noformat', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace('{Noformat', '{noformat', regex=True)
 
-    def remove_special_tags(self):
-        print("Removing special tags ...")
-        self.comments[['comment']] = self.comments[['comment']].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
+    def remove_special_tags(self, dataset='comments', colname='comment'):
+        print("Removing special tags. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[[colname]] = self.comments[[colname]].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
+        elif dataset == 'summaries':
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
 
-    def remove_punctuation(self, colname):
-        print("Removing punctuation from column {0} (apart from dashes and underscores) ...".format(colname))
+    def remove_punctuation(self, dataset='comments',colname='comment'):
+        print("Removing punctuation (apart from dashes and underscores). Dataset: {0}, Column: {1} ...".format(dataset,colname))
         # Remove punctuation except for dashes (-) and underscores(_)
         punct = '|'.join([re.escape(x) for x in string.punctuation.replace('-','').replace('_','')])
-
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Removing punctuation from {0} ... processed {1} rows".format(colname, i))
             if len(row[colname]) > 0:
@@ -214,44 +283,71 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("Punctuation removal complete. Processed {0} rows".format(i))
-        self.comments[colname] = pd.Series(new_items).values
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
 
-    def remove_digit_only_words(self, colname):
-        print("Removing digit-only words from column {0} ...".format(colname))
+    def remove_digit_only_words(self, dataset='comments', colname='comment'):
+        print("Removing digit-only words. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i%200000 == 0:
                 print("Removing digit-only words from {0} ... processed {1} rows".format(colname, i))
             words = row[colname].split()
             new_items.append(' '.join([word for word in words if not word.isdigit()]))
         print("Digit-only word removal complete. Processed {0} rows".format(i))
-        self.comments[colname] = pd.Series(new_items).values
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
 
-    def remove_small_words(self, colname, minlen):
-        print("Removing small words (len < {0}) from column {1} ...".format(minlen, colname))
+    def remove_small_words(self, dataset, colname, minlen):
+        print("Removing small words (len < {0}). Dataset{1}, Column {2} ...".format(minlen,dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i%200000 == 0:
                 print("Removing small words (len < {0}) from {1} ... processed {2} rows".format(minlen, colname, i))
             words = row[colname].split()
             new_items.append(' '.join([word for word in words if len(word) >= minlen]))
         print("Small word removal complete. Processed {0} rows".format(i))
-        self.comments[colname] = pd.Series(new_items).values
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
 
-    def convert_to_lowercase(self, colname):
-        print("Converting column '{0}' to lowercase ...".format(colname))
-        self.comments[colname] = self.comments[colname].str.lower()
+    def convert_to_lowercase(self, dataset, colname):
+        print("Converting to lowercase. Dataset {0}, Column: {1} ...".format(dataset,colname))
+        if dataset == 'comments':
+            self.comments[colname] = self.comments[colname].str.lower()
+        elif dataset == 'summaries':
+            self.summaries[colname] = self.summaries[colname].str.lower()
 
-    def remove_stopwords(self, colname):
-        print("Removing stopwords from column {0} ...".format(colname))
+    def remove_stopwords(self, dataset, colname):
+        print("Removing stopwords. Dataset {0}, Column {1} ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
             if i != 0 and i%200000 == 0:
                 print("Removing stopwords from {0} ... processed {1} rows".format(colname, i))
             words = row[colname].split()
             new_items.append(' '.join([word for word in words if word not in self.stopwords]))
         print("Stopwords removal complete. Processed {0} rows".format(i))
-        self.comments[colname] = pd.Series(new_items).values
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
 
     def lemmatize(self, colname):
         print("Lemmatizing column {0} ...".format(colname))
@@ -285,19 +381,31 @@ class DataPreprocessor(object):
 
         if len(columns) == 0:
             self.comments.to_csv('{0}/{1}'
-                .format(self.output_path,self.output_file), index=False)
+                .format(self.output_path,self.comms_output_file), index=False)
         else:
             self.comments.to_csv('{0}/{1}_only.csv'
                 .format(self.output_path,'-'.join(columns)),columns=columns, index=False)
 
+    """ Save summaries to a CSV file with the selected columns. Save all columns if none is specified. """
+    def summaries_to_csv(self, columns=[]):
+        if not os.path.isdir(self.output_path):
+            os.makedirs(self.output_path)
+
+        if len(columns) == 0:
+            self.summaries.to_csv('{0}/{1}'
+                .format(self.output_path,self.summs_output_file), index=False)
+        else:
+            self.summaries.to_csv('{0}/{1}_only.csv'
+                .format(self.output_path,'-'.join(columns)),columns=columns, index=False)
+
     def selective_preprocess(self):
-        if os.path.isfile("{0}/{1}".format(self.output_path,self.output_file)) and not self.args.rebuild:
+        if os.path.isfile("{0}/{1}".format(self.output_path,self.comms_output_file)) and not self.args.rebuild:
             print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
             return
 
         self.load_comments()
-        self.clean_comment_newlines()
-        self.drop_na_comments()
+        self.clean_newlines('comments','comment')
+        self.drop_na('comments','comment')
 
         p_url = self.get_proper_answer("Remove urls? (y,n): ")
         p_email = self.get_proper_answer("Remove emails? (y,n): ")
@@ -315,25 +423,25 @@ class DataPreprocessor(object):
         p_stop = self.get_proper_answer("Remove stopwords? (y,n): ")
         p_lemma = self.get_proper_answer("Apply lemmatization in comments? (y,n): ")
 
-        self.remove_urls() if p_url else {}
-        self.remove_emails() if p_email else {}
-        self.remove_multiple_spaces() if p_spaces else {}
-        self.fix_bad_tag_cases() if p_fixtags else {}
-        self.remove_special_tags() if p_specialtags else {}
-        self.extract_code() if p_code else {}
-        self.extract_quotes() if p_quotes else {}
-        self.extract_noformats() if p_noformats else {}
-        self.extract_panels() if p_panels else {}
+        self.remove_urls('comments','comment') if p_url else {}
+        self.remove_emails('comments','comment') if p_email else {}
+        self.remove_multiple_spaces('comments','comment') if p_spaces else {}
+        self.fix_bad_tag_cases('comments','comment') if p_fixtags else {}
+        self.remove_special_tags('comments','comment') if p_specialtags else {}
+        self.extract_code('comments','comment') if p_code else {}
+        self.extract_quotes('comments','comment') if p_quotes else {}
+        self.extract_noformats('comments','comment') if p_noformats else {}
+        self.extract_panels('comments','comment') if p_panels else {}
         for column in ['comment', 'quotes', 'noformats', 'panels']:
-            self.remove_punctuation(colname=column) if p_punct else {}
+            self.remove_punctuation('comments',column) if p_punct else {}
             # Now remove spaces again from each column
-            self.remove_multiple_spaces(colname=column) if p_spaces else {}
+            self.remove_multiple_spaces('comments',column) if p_spaces else {}
 
         for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
-            self.remove_digit_only_words(colname=column) if p_digits else {}
-            self.remove_small_words(colname=column, minlen=2) if p_small else {}
-            self.convert_to_lowercase(colname=column) if p_lower else {}
-            self.remove_stopwords(colname=column) if p_stop else {}
+            self.remove_digit_only_words('comments',column) if p_digits else {}
+            self.remove_small_words('comments',column, minlen=2) if p_small else {}
+            self.convert_to_lowercase('comments',column) if p_lower else {}
+            self.remove_stopwords('comments',column) if p_stop else {}
 
         if p_lemma == True:
             self.lemmatizer = spacy.load('en')
@@ -347,33 +455,83 @@ class DataPreprocessor(object):
 
     def preprocess(self):
         if os.path.isfile("{0}/{1}"
-            .format(self.output_path,self.output_file)) and not self.args.rebuild:
+            .format(self.output_path,self.comms_output_file)) and not self.args.rebuild:
             print("Preprocessed comments already exist. Run with --rebuild to rebuild anyway.")
             return
 
+        if os.path.isfile("{0}/{1}"
+            .format(self.output_path,self.summs_output_file)) and not self.args.rebuild:
+            print("Preprocessed summaries already exist. Run with --rebuild to rebuild anyway.")
+            return
+
+        # Load datasets
         self.load_comments()
-        self.clean_comment_newlines()
-        self.drop_na_comments()
-        self.remove_urls()
-        self.remove_emails()
-        self.remove_multiple_spaces()
-        self.fix_bad_tag_cases()
-        self.remove_special_tags()
-        self.extract_code()
-        self.extract_quotes()
-        self.extract_noformats()
-        self.extract_panels()
+        self.load_summaries()
+
+        # Clean the newlines where it makes sense to
+        self.clean_newlines('comments','comment')
+        self.clean_newlines('summaries','description')
+
+        # Drop rows with NA values in that column where it makes sense (so not in description of summaries)
+        self.drop_na('comments','comment')
+        self.drop_na('summaries','summary')
+
+        # Remove URLs
+        self.remove_urls('comments','comment')
+        self.remove_urls('summaries','summary')
+        self.remove_urls('summaries','description')
+
+        # Remove emails
+        self.remove_emails('comments','comment')
+        self.remove_emails('summaries','summary')
+        self.remove_emails('summaries','description')
+
+        # Remove multiple spaces
+        self.remove_multiple_spaces('comments','comment')
+        self.remove_multiple_spaces('summaries','summary')
+        self.remove_multiple_spaces('summaries','description')
+
+        # Fix some of the bad tag cases (eg. {Noformat)). Will not do this for summary column of summaries
+        self.fix_bad_tag_cases('comments','comment')
+        self.fix_bad_tag_cases('summaries','description')
+
+        # Remove special tags
+        self.remove_special_tags('comments','comment')
+        self.remove_special_tags('summaries','description')
+
+        # Extracting special blocks like code, quotes, noformats and panels
+        self.extract_code('comments','comment')
+        self.extract_code('summaries','description')
+        self.extract_quotes('comments','comment')
+        self.extract_quotes('summaries','description')
+        self.extract_noformats('comments','comment')
+        self.extract_noformats('summaries','description')
+        self.extract_panels('comments','comment')
+        self.extract_panels('summaries','description')
 
         for column in ['comment', 'quotes', 'noformats', 'panels']:
-            self.remove_punctuation(colname=column)
-            # Now remove spaces again from each column - Could we avoid having to do this again?
-            self.remove_multiple_spaces(colname=column)
+            self.remove_punctuation('comments',column)
+        # This is deliberately out of the for loop - Could we avoid having to do this again?
+        # note: this may really be unecessary and can probably be removed - Check it 
+        self.remove_multiple_spaces('comments','comment')
+
+        for column in ['summary', 'description']:
+            self.remove_punctuation('summaries',column)
+        # This is deliberately out of the for loop
+        self.remove_multiple_spaces('summaries','description')
 
         for column in ['comment', 'quotes', 'noformats', 'panels', 'code']:
-            self.remove_digit_only_words(colname=column)
-            self.remove_small_words(colname=column, minlen=2)
-            self.convert_to_lowercase(colname=column)
-            self.remove_stopwords(colname=column)
+            self.remove_digit_only_words('comments',column)
+            self.remove_small_words('comments',column,minlen=2)
+            self.convert_to_lowercase('comments',column)
+            self.remove_stopwords('comments',column)
+
+        # Same for summaries
+        for column in ['summary','description']:
+            self.remove_digit_only_words('summaries',column)
+            self.remove_small_words('summaries',column,minlen=2)
+            self.convert_to_lowercase('summaries',column)
+            self.remove_stopwords('summaries',column)
 
         # Initialize lemmatizer and apply lemmatization to the comments.
         # (would be good to do this for panels and quotes maybe)
@@ -382,9 +540,12 @@ class DataPreprocessor(object):
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
-
         # Write out comment column only for inspection
         self.comments_to_csv(['comment'])
+
+        # Same for summaries
+        self.summaries_to_csv()
+        self.summaries_to_csv(['summary'])
 
 
 preprocessor = DataPreprocessor()
