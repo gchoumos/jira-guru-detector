@@ -129,7 +129,7 @@ class DataPreprocessor(object):
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
 
     def extract_quotes(self, dataset='comments', colname='comment'):
-        print("Extracting text in {quote} tags. Dataset {0}, Column: {1}. This may take some time ...".format(dataset,colname))
+        print("Extracting text in {{quote}} tags. Dataset {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
         # Create the new column with the quotes as returned by findall (list of tuples)
         if dataset == 'comments':
@@ -142,7 +142,7 @@ class DataPreprocessor(object):
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting quotes ... processed {0} rows".format(i))
-            if row.quotes != []:
+            if isinstance(row.quotes,list) and row.quotes != []:
                 cur_quotes = []
                 for quote in row.quotes:
                     # Create a list with all the matches (without the {quote} tags
@@ -163,7 +163,7 @@ class DataPreprocessor(object):
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
 
     def extract_noformats(self, dataset='comments', colname='comment'):
-        print("Extracting text in {noformat} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
+        print("Extracting text in {{noformat}} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
         if dataset == 'comments':
             self.comments['noformats'] = self.comments[[colname][0]].str.findall(r'(\{noformat.*?\}(.*?)\{noformat\})')
@@ -174,7 +174,7 @@ class DataPreprocessor(object):
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting noformats ... processed {0} rows".format(i))
-            if row.noformats != []:
+            if isinstance(row.noformats,list) and row.noformats != []:
                 cur_noformats = []
                 for noformat in row.noformats:
                     cur_noformats.append(noformat[1])
@@ -192,7 +192,7 @@ class DataPreprocessor(object):
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
     def extract_code(self, dataset='comments', colname='comment'):
-        print("Extracting {code} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
+        print("Extracting {{code}} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
         if dataset == 'comments':
             self.comments['code'] = self.comments[[colname][0]].str.findall(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})')
@@ -203,7 +203,7 @@ class DataPreprocessor(object):
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting code ... processed {0} rows".format(i))
-            if row.code != []:
+            if  isinstance(row.code,list) and row.code != []:
                 cur_code = []
                 for code_block in row.code:
                     cur_code.append(code_block[1])
@@ -222,7 +222,7 @@ class DataPreprocessor(object):
 
     def extract_panels(self, dataset='comments', colname='comment'):
         # I am not sure if panels can include nested panels. I will assume no.
-        print("Extracting text in {panel} tags. Dataset: {0}, Column: {1}. This will take some time ...".format(dataset,colname))
+        print("Extracting text in {{panel}} tags. Dataset: {0}, Column: {1}. This will take some time ...".format(dataset,colname))
         new_items = []
         if dataset == 'comments':
             self.comments['panels'] = self.comments[[colname][0]].str.findall(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})')
@@ -233,7 +233,7 @@ class DataPreprocessor(object):
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Extracting panels ... processed {0} rows".format(i))
-            if row.panels != []:
+            if isinstance(row.panels,list) and row.panels != []:
                 cur_panel = []
                 for panel in row.panels:
                     cur_panel.append(panel[1])
@@ -277,7 +277,8 @@ class DataPreprocessor(object):
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
                 print("Removing punctuation from {0} ... processed {1} rows".format(colname, i))
-            if len(row[colname]) > 0:
+            # After a recent change, the else here may not be needed - Check it
+            if isinstance(row[colname],str):
                 new_items.append(re.sub(punct,' ',row[colname]))
             else:
                 new_items.append('')
@@ -307,7 +308,7 @@ class DataPreprocessor(object):
             self.summaries[colname] = pd.Series(new_items).values
 
     def remove_small_words(self, dataset, colname, minlen):
-        print("Removing small words (len < {0}). Dataset{1}, Column {2} ...".format(minlen,dataset,colname))
+        print("Removing small words (len < {0}). Dataset: {1}, Column: {2} ...".format(minlen,dataset,colname))
         new_items = []
         if dataset == 'comments':
             loop = self.comments.iterrows()
@@ -325,14 +326,14 @@ class DataPreprocessor(object):
             self.summaries[colname] = pd.Series(new_items).values
 
     def convert_to_lowercase(self, dataset, colname):
-        print("Converting to lowercase. Dataset {0}, Column: {1} ...".format(dataset,colname))
+        print("Converting to lowercase. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
             self.comments[colname] = self.comments[colname].str.lower()
         elif dataset == 'summaries':
             self.summaries[colname] = self.summaries[colname].str.lower()
 
     def remove_stopwords(self, dataset, colname):
-        print("Removing stopwords. Dataset {0}, Column {1} ...".format(dataset,colname))
+        print("Removing stopwords. Dataset: {0}, Column {1} ...".format(dataset,colname))
         new_items = []
         if dataset == 'comments':
             loop = self.comments.iterrows()
