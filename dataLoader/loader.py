@@ -11,9 +11,7 @@ TO DO
   by WH, which means that the summary line will be ignored.
 - What about using creator instead of reporter??
 - Mention the captcha challenge case that leads to a login error.
-- I should make sure that the csv files are generated in the proper directory. Currently I only give
-  the name. This will be useful to later check if they are already there so we can ask if the user wants
-  to indeed recreate them or not.
+
 """
 
 import getpass
