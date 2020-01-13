@@ -43,6 +43,7 @@ import os
 import spacy
 import pandas as pd
 from gensim.parsing.preprocessing import STOPWORDS
+from collections import defaultdict
 from settings import *
 
 import pdb
@@ -350,6 +351,42 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[colname] = pd.Series(new_items).values
 
+    # This should be improved in some way. For ~540k comments and ~ 42.5k summaries
+    # almost 1:10-1:20 was required for every 100 outer for loops.
+    def combine_ticket_presence_and_creation(self):
+        print("Combining ticket presence and creation through comments...")
+        # We'll need to know the active authors to include the active status in the added rows
+        print("Generating list of active authors...")
+        active_authors = list(self.comments.author[self.comments.active==True].unique())
+
+        print("Generating involvement map...")
+        involvement = defaultdict(set)
+        for _, comment in self.comments[['key','author']].iterrows():
+            involvement[comment.key].add(comment.author)
+        print("Involvement from comments generated. Moving to summaries...")
+        for _, summary in self.summaries[['key','creator']].iterrows():
+            involvement[summary.key].add(summary.creator)
+        print("Involvement from summaries generated.")
+        j = 0
+        for _, ticket in self.summaries[['key','summary','created','issuetype']].iterrows():
+            for person in involvement[ticket.key]:
+                self.comments.loc[len(self.comments.index)] = {
+                    'key': ticket.key,
+                    'author': person,
+                    'active': person in active_authors,
+                    'created': ticket.created,
+                    'issuetype': ticket.issuetype,
+                    'comment': ticket.summary,
+                    'code': '',
+                    'quotes': '',
+                    'noformats': '',
+                    'panels': ''
+                }
+            j += 1
+            if j%100 == 0:
+                print("Processed {0} tickets.".format(j))
+        print("Presence combination finished. New comments dataset size: {0}".format(len(self.comments)))
+
     def lemmatize(self, colname):
         print("Lemmatizing column {0} ...".format(colname))
         new_items = []
@@ -538,6 +575,14 @@ class DataPreprocessor(object):
         # (would be good to do this for panels and quotes maybe)
         # self.lemmatizer = spacy.load('en')
         # self.lemmatize(colname='comment')
+
+        ######################################################
+        # Include summaries and comment presence as comments #
+        ######################################################
+        # The following cases will result to a pseudo-comment added with the ticket summary
+        # * Ticket creation  (whoever created the ticket)
+        # * Comment presence (whoever commented on the ticket)
+        self.combine_ticket_presence_and_creation()
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
