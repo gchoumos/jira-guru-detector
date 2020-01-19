@@ -7,8 +7,6 @@ TODO:
   lines that (after trimmed of whitespace) start and end with "|". However bear in mind
   that this kind of line starting/ending criterion only applies before removing the
   newlines. Actually I am more inclined to NOT extract them to be honest.
-- I am currently dropping rows based on the comment column being NA. Maybe I should
-  be dropping a row if ANY of the columns is NA and not only the "comment"
 - extract_quotes and extract_noformats (and possibly more) can be merged into 1 function
   instead of separate ones. The specific case could be an argument and the regular
   expressions in an if/else clause (or even in settings)
@@ -24,16 +22,13 @@ TODO:
 - It would probably make sense to remove multiple comments before separating columns. I guess it would
   decrease overall preprocess time a lot.
 - Stemming is probably worth considering. There are tons of eligible cases.
-- Looks like the comments_to_csv function is not necessary as it just make a single call. So maybe better to
-  just make the call instead of triggering a new function to do this. Having a separate function would make
-  more sense if there was more logic involved.
 - I don't see any point having the check for the preprocessed files already existing and the --rebuild argument
   both in the preprocess and the selective_preprocess functions. We are repeating ourselves. This check should
   be made only once, before preprocess or selective_preprocess is called.
-- Maybe I should consider removing the selective preprocess at some point completely.
+---- Maybe I should consider removing the selective preprocess at some point completely.
 - I am not sure if I should continue NOT replacing dashes. If we apply the same preprocess to the user input,
   then there is no point probably. Also, it looks like it's going to make the data clearer. Underscores should
-  stay though.
+  stay though (or should be MERGED - so app_name should become appname and not "app name").
 """
 
 import re
@@ -44,6 +39,7 @@ import spacy
 import pandas as pd
 from gensim.parsing.preprocessing import STOPWORDS
 from collections import defaultdict
+from csv import DictWriter
 from settings import *
 
 import pdb
@@ -68,17 +64,22 @@ class DataPreprocessor(object):
         parser.add_argument("--selective", help="prompt before each preprocess step", action="store_true")
         self.args = parser.parse_args()
 
+
     def load_comments(self):
         print("Loading Comments dataset ...")
         self.comments = pd.read_csv('{0}/{1}'
             .format(self.input_path,self.comms_input_file), header=0)
         print("Loading finished - Comments Dataset length is {0} rows".format(len(self.comments)))
 
+
+
     def load_summaries(self):
         print("Loading Summaries dataset ...")
         self.summaries = pd.read_csv('{0}/{1}'
             .format(self.input_path,self.summs_input_file), header=0)
         print("Loading finished - Summaries Dataset length is {0} rows".format(len(self.summaries)))
+
+
 
     def clean_newlines(self, dataset='comments', colname='comment'):
         # Replace carriage returns and newlines with space
@@ -87,6 +88,8 @@ class DataPreprocessor(object):
             self.comments[[colname]] = self.comments[[colname]].replace([r'\n',r'\r'],' ', regex=True)
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace([r'\n',r'\r'],' ', regex=True)
+
+
 
     def drop_na(self, dataset='comments', colname='comment'):
         # If any row doesn't have value for the column (so it's N/A), then drop it.
@@ -108,12 +111,16 @@ class DataPreprocessor(object):
         else:
             print("No NAs found")
 
+
+
     def remove_multiple_spaces(self, dataset='comments', colname='comment'):
         print("Removing multiple spaces. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
             self.comments[[colname]] = self.comments[[colname]].replace(r'\s+',' ', regex=True)
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'\s+',' ', regex=True)
+
+
 
     def remove_urls(self, dataset='comments', colname='comment'):
         print("Removing URLs. Dataset: {0}, Column: {1} ...".format(dataset,colname))
@@ -122,12 +129,16 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
 
+
+
     def remove_emails(self, dataset='comments', colname='comment'):
         print("Removing e-mails. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
             self.comments[[colname]] = self.comments[[colname]].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'[\w\.-]+@[\w\.-]+\.\w+', '', regex=True)
+
+
 
     def extract_quotes(self, dataset='comments', colname='comment'):
         print("Extracting text in {{quote}} tags. Dataset {0}, Column: {1}. This may take some time ...".format(dataset,colname))
@@ -163,6 +174,8 @@ class DataPreprocessor(object):
             self.summaries['quotes'] = pd.Series(new_items).values
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Qq]uote.*?\}(.*?)\{[Qq]uote\})', '', regex=True)
 
+
+
     def extract_noformats(self, dataset='comments', colname='comment'):
         print("Extracting text in {{noformat}} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
@@ -192,6 +205,8 @@ class DataPreprocessor(object):
             self.summaries['noformats'] = pd.Series(new_items).values
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{noformat.*?\}(.*?)\{noformat\})', '', regex=True)
 
+
+
     def extract_code(self, dataset='comments', colname='comment'):
         print("Extracting {{code}} tags. Dataset: {0}, Column: {1}. This may take some time ...".format(dataset,colname))
         new_items = []
@@ -220,6 +235,8 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries['code'] = pd.Series(new_items).values
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Cc]ode.*?\}(.*?)\{[Cc]ode\})', '', regex=True)
+
+
 
     def extract_panels(self, dataset='comments', colname='comment'):
         # I am not sure if panels can include nested panels. I will assume no.
@@ -251,6 +268,8 @@ class DataPreprocessor(object):
             self.summaries['panels'] = pd.Series(new_items).values
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Pp]anel.*?\}(.*?)\{[Pp]anel\})', '', regex=True)
 
+
+
     def fix_bad_tag_cases(self, dataset='comments', colname='comment'):
         # More will probably be added
         print("Fixing bad tag cases. Dataset: {0}, Column: {1} ...".format(dataset,colname))
@@ -259,12 +278,16 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace('{Noformat', '{noformat', regex=True)
 
+
+
     def remove_special_tags(self, dataset='comments', colname='comment'):
         print("Removing special tags. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
             self.comments[[colname]] = self.comments[[colname]].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
         elif dataset == 'summaries':
             self.summaries[[colname]] = self.summaries[[colname]].replace(r'(\{[Cc]olor.*?\}(.*?)\{[Cc]olor\})', '', regex=True)
+
+
 
     def remove_punctuation(self, dataset='comments',colname='comment'):
         print("Removing punctuation (apart from dashes and underscores). Dataset: {0}, Column: {1} ...".format(dataset,colname))
@@ -290,6 +313,8 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[colname] = pd.Series(new_items).values
 
+
+
     def remove_digit_only_words(self, dataset='comments', colname='comment'):
         print("Removing digit-only words. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         new_items = []
@@ -307,6 +332,8 @@ class DataPreprocessor(object):
             self.comments[colname] = pd.Series(new_items).values
         elif dataset == 'summaries':
             self.summaries[colname] = pd.Series(new_items).values
+
+
 
     def remove_small_words(self, dataset, colname, minlen):
         print("Removing small words (len < {0}). Dataset: {1}, Column: {2} ...".format(minlen,dataset,colname))
@@ -326,12 +353,16 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[colname] = pd.Series(new_items).values
 
+
+
     def convert_to_lowercase(self, dataset, colname):
         print("Converting to lowercase. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
             self.comments[colname] = self.comments[colname].str.lower()
         elif dataset == 'summaries':
             self.summaries[colname] = self.summaries[colname].str.lower()
+
+
 
     def remove_stopwords(self, dataset, colname):
         print("Removing stopwords. Dataset: {0}, Column {1} ...".format(dataset,colname))
@@ -351,13 +382,13 @@ class DataPreprocessor(object):
         elif dataset == 'summaries':
             self.summaries[colname] = pd.Series(new_items).values
 
-    # This should be improved in some way. For ~540k comments and ~ 42.5k summaries
-    # almost 1:10-1:20 was required for every 100 outer for loops.
+
+
     def combine_ticket_presence_and_creation(self):
         print("Combining ticket presence and creation through comments...")
         # We'll need to know the active authors to include the active status in the added rows
         print("Generating list of active authors...")
-        active_authors = list(self.comments.author[self.comments.active==True].unique())
+        active_authors = list(self.comments.author[self.comments.active].unique())
 
         print("Generating involvement map...")
         involvement = defaultdict(set)
@@ -368,9 +399,10 @@ class DataPreprocessor(object):
             involvement[summary.key].add(summary.creator)
         print("Involvement from summaries generated.")
         j = 0
+        new_rows = []
         for _, ticket in self.summaries[['key','summary','created','issuetype']].iterrows():
             for person in involvement[ticket.key]:
-                self.comments.loc[len(self.comments.index)] = {
+                new_rows.append({
                     'key': ticket.key,
                     'author': person,
                     'active': person in active_authors,
@@ -381,11 +413,19 @@ class DataPreprocessor(object):
                     'quotes': '',
                     'noformats': '',
                     'panels': ''
-                }
+                })
             j += 1
             if j%100 == 0:
                 print("Processed {0} tickets.".format(j))
-        print("Presence combination finished. New comments dataset size: {0}".format(len(self.comments)))
+        print("Presence combination finished. Combined presence introduced {0} new rows".format(len(new_rows)))
+        # Now write the result to a new csv
+        dict_keys = new_rows[0].keys()
+        with open('{0}/presence.csv'.format(self.output_path), 'w') as f:
+            dict_writer = DictWriter(f, dict_keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(new_rows)
+
+
 
     def lemmatize(self, colname):
         print("Lemmatizing column {0} ...".format(colname))
@@ -401,6 +441,8 @@ class DataPreprocessor(object):
         print("Lemmatization of {0} complete. Processed {1} rows".format(colname,i))
         self.comments[colname] = pd.Series(new_items).values
 
+
+
     def get_proper_answer(self,text="Please respond (y,n): "):
             answer = input(text).lower().strip()
             while answer not in ['y', 'n']:
@@ -410,6 +452,8 @@ class DataPreprocessor(object):
                 return True
             else:
                 return False
+
+
 
     """ Save comments to a CSV file with the selected columns. Save all columns if none is specified. """
     def comments_to_csv(self, columns=[]):
@@ -424,6 +468,8 @@ class DataPreprocessor(object):
             self.comments.to_csv('{0}/{1}_only.csv'
                 .format(self.output_path,'-'.join(columns)),columns=columns, index=False)
 
+
+
     """ Save summaries to a CSV file with the selected columns. Save all columns if none is specified. """
     def summaries_to_csv(self, columns=[]):
         if not os.path.isdir(self.output_path):
@@ -435,6 +481,8 @@ class DataPreprocessor(object):
         else:
             self.summaries.to_csv('{0}/{1}_only.csv'
                 .format(self.output_path,'-'.join(columns)),columns=columns, index=False)
+
+
 
     def selective_preprocess(self):
         if os.path.isfile("{0}/{1}".format(self.output_path,self.comms_output_file)) and not self.args.rebuild:
@@ -489,6 +537,7 @@ class DataPreprocessor(object):
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
+
 
 
     def preprocess(self):
@@ -576,22 +625,34 @@ class DataPreprocessor(object):
         # self.lemmatizer = spacy.load('en')
         # self.lemmatize(colname='comment')
 
+        # Write out the preprocessed comments file
+        self.comments_to_csv()
+        # Write out comment column only for inspection
+        self.comments_to_csv(['comment'])
+
+        # Write out the preprocessed summaries to a file
+        self.summaries_to_csv()
+        self.summaries_to_csv(['summary'])
+
         ######################################################
         # Include summaries and comment presence as comments #
         ######################################################
         # The following cases will result to a pseudo-comment added with the ticket summary
         # * Ticket creation  (whoever created the ticket)
         # * Comment presence (whoever commented on the ticket)
+        # * Moved after
         self.combine_ticket_presence_and_creation()
-
-        # Write out the preprocessed comments file
-        self.comments_to_csv()
-        # Write out comment column only for inspection
-        self.comments_to_csv(['comment'])
-
-        # Same for summaries
-        self.summaries_to_csv()
-        self.summaries_to_csv(['summary'])
+        # And now append the combined to the comments for full thrust!
+        combined = pd.concat([
+            self.comments,
+            pd.read_csv('{0}/presence.csv'.format(self.output_path), header=0)
+        ])
+        # And write the all to the final output file
+        combined.to_csv(
+            '{0}/combined.csv'.format(self.output_path),
+            columns=['key','created','issuetype','author','active','comment','code','quotes'],
+            index=False
+        )
 
 
 preprocessor = DataPreprocessor()
