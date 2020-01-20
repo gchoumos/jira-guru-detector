@@ -5,7 +5,7 @@ from texttable import Texttable
 ## Reload the model
 model = pickle.load(open('latest_model','rb'))
 
-def detect_guru(text, n=10):
+def detect_guru(text, n=-1):
     t = Texttable()
     test = np.dstack([
         text
@@ -17,8 +17,7 @@ def detect_guru(text, n=10):
     test_probs = y
     ordered = [[test_labels[i],test_probs[0][i],test_probs[0][i]] for i in range(test_labels.shape[0])]
     ordered.sort(key=lambda x: x[1],reverse=True)
-    print("Top {0} results:".format(n))
-    for i in range(n):
+    for i in range(len(ordered)):
         if ordered[i][1]*100 >= 50:
             ordered[i][2] = "Absolute Guru"
         elif ordered[i][1]*100 >= 25:
@@ -34,11 +33,14 @@ def detect_guru(text, n=10):
         elif ordered[i][1]*100 >= 2:
             ordered[i][2] = "*"
         else:
-            # ordered[i][2] = "Not likely"
-            break
+            ordered[i][2] = "Low probability compared to the rest"
+    if n < 1:
+        print("Top results:")
+    else:
+        print("Top {0} results:".format(n))
     t.header(['','Name','Guru Meter'])
-    for i in range(1000):
-        if ordered[i][1]*100 >= 2:
+    for i in range(len(ordered)):
+        if (n < 1 and int(ordered[i][1]*100) >= 2) or i < n:
             t.add_row(['{0}.'.format(i+1),ordered[i][0],ordered[i][2]])
         else:
             break

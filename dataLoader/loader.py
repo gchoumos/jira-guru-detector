@@ -76,7 +76,7 @@ class DataLoader(object):
 
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
-        comm_cols = ['key','created','issuetype','author','active','comment']
+        comm_cols = ['key','created','issuetype','author','active','comment','code','quotes','noformats','panels']
         summ_name = '{0}/summaries.csv'.format(self.output_path)
         comm_name = '{0}/comments.csv'.format(self.output_path)
 
