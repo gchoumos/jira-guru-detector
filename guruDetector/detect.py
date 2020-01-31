@@ -38,7 +38,7 @@ data = pd.read_csv('{0}/{1}'.format(INPUT_PATH,INPUT_FILE))
 # Keep only data from users that are still active
 if ACTIVE_ONLY == True:
     rows_before = data.shape[0]
-    data = data[data.active == 'True']
+    data = data[data.active == True]
     print("CONFIG: Keeping only data from active accounts. {0} rows have been removed."
             .format(rows_before-data.shape[0]))
 

@@ -1,5 +1,8 @@
 """ Settings for the Data Preprocessor """
 
+# Consider only users that are still active in Jira. Default = True
+ACTIVE_ONLY = True
+
 DP_SETTINGS = {
     'input_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
     'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed',

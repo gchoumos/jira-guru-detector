@@ -29,6 +29,13 @@ TODO:
 - I am not sure if I should continue NOT replacing dashes. If we apply the same preprocess to the user input,
   then there is no point probably. Also, it looks like it's going to make the data clearer. Underscores should
   stay though (or should be MERGED - so app_name should become appname and not "app name").
+- Would make more sense to convert to lowercase as soon as possible. And then this will mean that I will be
+  able to also update some of the regular expressions accordingly.
+- I strongly believe that I should only preprocess the comments coming from Active authors, otherwise we'll
+  end up preprocessing a massive amount of data that will never be used. This problem is going to get worse
+  and worse as time passes.
+- If I stay with ignoring inactive, then more changes are needed because parts of the functionality have
+  become redundant. Search for "active" and it will become obvious.
 """
 
 import re
@@ -81,6 +88,15 @@ class DataPreprocessor(object):
 
 
 
+    def ignore_inactive_user_comments(self):
+        rows_before = self.comments.shape[0]
+        self.comments = self.comments[self.comments.active == 'True']
+        print("CONFIG: Keeping only comments from active accounts. {0} rows have been removed."
+                .format(rows_before-self.comments.shape[0]))
+
+
+
+
     def clean_newlines(self, dataset='comments', colname='comment'):
         # Replace carriage returns and newlines with space
         print("Removing newlines and carriage returns. Dataset: {0}, Column: {1} ...".format(dataset,colname))
@@ -123,11 +139,12 @@ class DataPreprocessor(object):
 
 
     def remove_urls(self, dataset='comments', colname='comment'):
+        # If clean newlines has already been called, there is no need to check for '\n\r' at the end of the regex
         print("Removing URLs. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         if dataset == 'comments':
-            self.comments[[colname]] = self.comments[[colname]].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
+            self.comments[[colname]] = self.comments[[colname]].replace(r'((https?:\/\/)|(www\.))[^\s]*', '', regex=True)
         elif dataset == 'summaries':
-            self.summaries[[colname]] = self.summaries[[colname]].replace(r'((https?:\/\/)|(www\.))[^ \n\r]*', '', regex=True)
+            self.summaries[[colname]] = self.summaries[[colname]].replace(r'((https?:\/\/)|(www\.))[^\s]*', '', regex=True)
 
 
 
@@ -555,6 +572,10 @@ class DataPreprocessor(object):
         # Load datasets
         self.load_comments()
         self.load_summaries()
+
+        # Ignore comments from inactive users
+        if ACTIVE_ONLY == True:
+            self.ignore_inactive_user_comments()
 
         # Clean the newlines where it makes sense to
         self.clean_newlines('comments','comment')
