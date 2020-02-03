@@ -11,7 +11,7 @@ TO DO
   by WH, which means that the summary line will be ignored.
 - What about using creator instead of reporter??
 - Mention the captcha challenge case that leads to a login error.
-
+- DEFECT: --rebuild will append on the existing files! This needs to be fixed. They must be removed first.
 """
 
 import getpass
@@ -76,7 +76,7 @@ class DataLoader(object):
 
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
-        comm_cols = ['key','created','issuetype','author','active','comment','code','quotes','noformats','panels']
+        comm_cols = ['key','created','issuetype','author','active','comment']
         summ_name = '{0}/summaries.csv'.format(self.output_path)
         comm_name = '{0}/comments.csv'.format(self.output_path)
 

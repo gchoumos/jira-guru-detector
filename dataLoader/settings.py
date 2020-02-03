@@ -5,7 +5,7 @@ SETTINGS = {
         'server': 'https://jira.openbet.com',
     },
     'ticketFrom': 20000, # doesn't matter anymore
-    'ticketTo': 63085, # doesn't matter anymore
+    'ticketTo': 63359, # doesn't matter anymore
     'maxResults': 200, # (defaults to 50)
     'fields': [
         'key',
@@ -90,7 +90,7 @@ BATCH_INTERVALS = [
     60001, 60199, 60200, 60399, 60400, 60599, 60600, 60799, 60800, 60999, # <-- modded
     61000, 61199, 61200, 61399, 61400, 61599, 61600, 61799, 61800, 61999,
     62000, 62199, 62200, 62399, 62400, 62599, 62600, 62799, 62800, 62999,
-    63000, 63085,
+    63000, 63198, 63200, 63359,                                           # <-- modded
 ]
 
 ################################################
@@ -102,3 +102,4 @@ BATCH_INTERVALS = [
 # lot and they really don't exist. probably a user
 # - the one who created WIL-60000 did it on purpose)
 # 60000 (because it's a troll ticket)
+# 63199
