@@ -433,7 +433,7 @@ class DataPreprocessor(object):
                     'panels': ''
                 })
             j += 1
-            if j%100 == 0:
+            if j%1000 == 0:
                 print("Processed {0} tickets.".format(j))
         print("Presence combination finished. Combined presence introduced {0} new rows".format(len(new_rows)))
         # Now write the result to a new csv
