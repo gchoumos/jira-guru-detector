@@ -310,6 +310,9 @@ class DataPreprocessor(object):
         print("Removing punctuation (apart from dashes and underscores). Dataset: {0}, Column: {1} ...".format(dataset,colname))
         # Remove punctuation except for dashes (-) and underscores(_)
         punct = '|'.join([re.escape(x) for x in string.punctuation.replace('-','').replace('_','')])
+        # Case 2 remove punctuation (all)
+        # punct = '|'.join([re.escape(x) for x in string.punctuation])
+        # print("BAZINGA! Also removing dashes and underscores. Dataset: {0}, Column: {1} ...".format(dataset,colname))
         new_items = []
         if dataset == 'comments':
             loop = self.comments.iterrows()
@@ -445,19 +448,26 @@ class DataPreprocessor(object):
 
 
 
-    def lemmatize(self, colname):
-        print("Lemmatizing column {0} ...".format(colname))
+    def lemmatize(self, dataset, colname):
+        print("Lemmatization. Dataset: {0}, Column {1} ...".format(dataset,colname))
         new_items = []
-        for i, row in self.comments.iterrows():
-            if i != 0 and i%200000 == 0:
-                print("Lemmatizing {0} ... processed {1} rows".format(colname, i))
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
+            if i != 0 and i%1000 == 0:
+                print("Lemmatizing - Dataset: {0} - Column: {1} ... processed {2} rows".format(dataset, colname, i))
             if len(row[colname]) > 0:
                 lemmata = self.lemmatizer(row[colname]) # This and next could be one row but it's easier to read
                 new_items.append(' '.join([x.lemma_ for x in lemmata]))
             else:
                 new_items.append('')
         print("Lemmatization of {0} complete. Processed {1} rows".format(colname,i))
-        self.comments[colname] = pd.Series(new_items).values
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
 
 
 
@@ -644,8 +654,9 @@ class DataPreprocessor(object):
 
         # Initialize lemmatizer and apply lemmatization to the comments.
         # (would be good to do this for panels and quotes maybe)
-        # self.lemmatizer = spacy.load('en')
-        # self.lemmatize(colname='comment')
+        # self.lemmatizer = spacy.load('en_core_web_md')
+        # self.lemmatize('comments', 'comment')
+        # self.lemmatize('summaries', 'summary')
 
         # Write out the preprocessed comments file
         self.comments_to_csv()
