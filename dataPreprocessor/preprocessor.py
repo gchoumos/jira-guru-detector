@@ -36,6 +36,9 @@ TODO:
   and worse as time passes.
 - If I stay with ignoring inactive, then more changes are needed because parts of the functionality have
   become redundant. Search for "active" and it will become obvious.
+- There was an edge case of a single person adding a single comment to ~ 5000 tickets. That is insane and it completely
+  skews the results. I banned that user but maybe it is worth introducing a metric, like a mean comments per ticket
+  value. Based on this, if a user has a comments per ticket value below a certain level, his comments should be dropped.
 """
 
 import re
@@ -683,7 +686,7 @@ class DataPreprocessor(object):
         # And write the all to the final output file
         combined.to_csv(
             '{0}/combined.csv'.format(self.output_path),
-            columns=['key','created','issuetype','author','active','comment','code','quotes'],
+            columns=['key','created','issuetype','author','active','comment','code','quotes','noformats','panels'],
             index=False
         )
 

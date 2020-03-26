@@ -1,6 +1,6 @@
 # Source of data - They are considered to be already preprocessed
 INPUT_PATH = '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed'
-INPUT_FILE = 'comments.csv'
+INPUT_FILE = 'combined.csv'
 
 # Consider only users that are still active in Jira. Default = True
 ACTIVE_ONLY = True
