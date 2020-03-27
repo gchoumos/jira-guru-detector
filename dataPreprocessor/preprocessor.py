@@ -36,6 +36,11 @@ TODO:
   and worse as time passes.
 - If I stay with ignoring inactive, then more changes are needed because parts of the functionality have
   become redundant. Search for "active" and it will become obvious.
+- If a dash-connected word **also exists** as an underscore-connected word, then change both versions to a single word by
+  replacing dashes/underscores with nothing:
+  example 1: oxi_xml, oxi-xml --> oxixml
+  example 2: oxi_xml_acc, oxi-xml-acc --> oxixmlacc
+  You need however to keep a list of those conversions in order to apply them to the user input!!
 - There was an edge case of a single person adding a single comment to ~ 5000 tickets. That is insane and it completely
   skews the results. I banned that user but maybe it is worth introducing a metric, like a mean comments per ticket
   value. Based on this, if a user has a comments per ticket value below a certain level, his comments should be dropped.
@@ -358,6 +363,26 @@ class DataPreprocessor(object):
 
 
 
+    def remove_punctuation_only_words(self, dataset='comments', colname='comment'):
+        print("Removing punctuation-only words. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        new_items = []
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
+            if i != 0 and i%200000 == 0:
+                print("Removing punctuation-only words from {0} ... processed {1} rows".format(colname,i))
+            words = row[colname].split()
+            new_items.append(' '.join([word for word in words if not all(c in string.punctuation for c in word)]))
+        print("Punctuation-only words removal complete. Processed {0} rows".format(i))
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
+
+
+
     def remove_small_words(self, dataset, colname, minlen):
         print("Removing small words (len < {0}). Dataset: {1}, Column: {2} ...".format(minlen,dataset,colname))
         new_items = []
@@ -654,6 +679,12 @@ class DataPreprocessor(object):
             self.remove_small_words('summaries',column,minlen=2)
             self.convert_to_lowercase('summaries',column)
             self.remove_stopwords('summaries',column)
+
+        # Remove words consisting only of punctuation. This will probaby catch the dash-only
+        # words because of the previous preprocessing steps.
+        self.remove_punctuation_only_words('comments','comment')
+        self.remove_punctuation_only_words('summaries','summary')
+        self.remove_punctuation_only_words('summaries','description')
 
         # Initialize lemmatizer and apply lemmatization to the comments.
         # (would be good to do this for panels and quotes maybe)
