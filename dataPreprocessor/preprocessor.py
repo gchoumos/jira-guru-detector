@@ -314,7 +314,7 @@ class DataPreprocessor(object):
 
 
 
-    def remove_punctuation(self, dataset='comments',colname='comment'):
+    def remove_punctuation(self, dataset='comments', colname='comment'):
         print("Removing punctuation (apart from dashes and underscores). Dataset: {0}, Column: {1} ...".format(dataset,colname))
         # Remove punctuation except for dashes (-) and underscores(_)
         punct = '|'.join([re.escape(x) for x in string.punctuation.replace('-','').replace('_','')])
@@ -328,7 +328,7 @@ class DataPreprocessor(object):
             loop = self.summaries.iterrows()
         for i, row in loop:
             if i != 0 and i % 200000 == 0:
-                print("Removing punctuation from {0} ... processed {1} rows".format(colname, i))
+                print("Removing punctuation from {0} ... processed {1} rows".format(colname,i))
             # After a recent change, the else here may not be needed - Check it
             if isinstance(row[colname],str):
                 new_items.append(re.sub(punct,' ',row[colname]))
@@ -336,6 +336,31 @@ class DataPreprocessor(object):
                 new_items.append('')
 
         print("Punctuation removal complete. Processed {0} rows".format(i))
+        if dataset == 'comments':
+            self.comments[colname] = pd.Series(new_items).values
+        elif dataset == 'summaries':
+            self.summaries[colname] = pd.Series(new_items).values
+
+
+
+    # While we replaced the rest of the punctuation with spaces. We are taking a different approach with
+    # dashes and underscores. We are replacing them with nothing!
+    def remove_dashes_underscores(self, dataset='comments', colname='comment'):
+        print("Removing dashes and underscores. Dataset: {0}, Column: {1} ...".format(dataset,colname))
+        new_items = []
+        if dataset == 'comments':
+            loop = self.comments.iterrows()
+        elif dataset == 'summaries':
+            loop = self.summaries.iterrows()
+        for i, row in loop:
+            if i != 0 and i % 200000 == 0:
+                print("Removing dashes and underscores from {0} ... processed {1} rows".format(colname,i))
+            if isinstance(row[colname],str):
+                new_items.append(re.sub('-|_','',row[colname]))
+            else:
+                new_items.append('')
+
+        print("Dashes and underscores removal complete. Processed {0} rows".format(i))
         if dataset == 'comments':
             self.comments[colname] = pd.Series(new_items).values
         elif dataset == 'summaries':
@@ -352,7 +377,7 @@ class DataPreprocessor(object):
             loop = self.summaries.iterrows()
         for i, row in loop:
             if i != 0 and i%200000 == 0:
-                print("Removing digit-only words from {0} ... processed {1} rows".format(colname, i))
+                print("Removing digit-only words from {0} ... processed {1} rows".format(colname,i))
             words = row[colname].split()
             new_items.append(' '.join([word for word in words if not word.isdigit()]))
         print("Digit-only word removal complete. Processed {0} rows".format(i))
@@ -587,7 +612,7 @@ class DataPreprocessor(object):
 
         if p_lemma == True:
             self.lemmatizer = spacy.load('en')
-            self.lemmatize(colname='comment')
+            self.lemmatize(dataset='comments', colname='comment')
             # Write out comment column only for inspection
             self.comments_to_csv(['comment'])
 
@@ -658,12 +683,14 @@ class DataPreprocessor(object):
 
         for column in ['comment', 'quotes', 'noformats', 'panels']:
             self.remove_punctuation('comments',column)
+            self.remove_dashes_underscores('comments',column)
         # This is deliberately out of the for loop - Could we avoid having to do this again?
         # note: this may really be unecessary and can probably be removed - Check it 
         self.remove_multiple_spaces('comments','comment')
 
         for column in ['summary', 'description']:
             self.remove_punctuation('summaries',column)
+            self.remove_dashes_underscores('summaries',column)
         # This is deliberately out of the for loop
         self.remove_multiple_spaces('summaries','description')
 
