@@ -1,15 +1,15 @@
 """ Settings for the Data Preprocessor """
 
+# The team that we will be running this for
+TEAM = 'WIL'
+
 # Consider only users that are still active in Jira. Default = True
 ACTIVE_ONLY = True
 
 DP_SETTINGS = {
     'input_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
-    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed',
-    'comms_input_file': 'comments.csv',
-    'comms_output_file': 'comments.csv',
-    'summs_input_file': 'summaries.csv',
-    'summs_output_file': 'summaries.csv',
+    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed_{0}'.format(TEAM),
+    'jiraPrj': TEAM,
 }
 
 # Issue types not in this list will be discarded. If it's empty though, everything will be included.
@@ -52,12 +52,16 @@ WORDS_TO_IGNORE = {
 
 # Will be overriden by the redacted settings. 
 IGNORE_AUTHOR_GROUPS = [r'.*exampleregexp\.com', r'.*exampleregexp2\.com']
-WIL_USERS_ACTIVE = {
-  'test1': 'Test User 1',
-  'test2': 'Test User 2',
-  'test3': 'Test User 3',
+ACTIVE_USERS = {
+  'TEAM-1': {
+    'test1': 'Test User 1',
+    'test2': 'Test User 2',
+    'test3': 'Test User 3',
+  },
+  'TEAM-2': {
+    'test4': 'Test User 4'
+  }
 }
-VALID_USERS = ['exampleuser1','exampleuser2']
 
 try:
     from redacted import *

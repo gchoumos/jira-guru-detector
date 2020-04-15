@@ -28,9 +28,9 @@ from feature_union_sklearn import (
 def ignored(author):
     return True in [bool(re.match(x, author)) for x in IGNORE_AUTHOR_GROUPS]
 
-# Tool to decide if author belongs to the current WH active users
-def current_wh(author):
-    return author in WIL_USERS_ACTIVE.keys()
+# Tool to decide if author belongs to the current team active users
+def current_team_member(author):
+    return author in ACTIVE_USERS[TEAM].keys()
 
 # Read our csv
 data = pd.read_csv('{0}/{1}'.format(INPUT_PATH,INPUT_FILE))
@@ -57,11 +57,11 @@ if len(IGNORE_AUTHOR_GROUPS) > 0:
     print("CONFIG: Dropped {0} comments by ignored Author groups."
             .format(rows_before-data.shape[0]))
 
-# Only include comments that are coming from currently active WH team members
-if CURRENT_WH_ONLY:
+# Only include comments that are coming from currently active team members
+if CURRENT_ONLY:
     rows_before = data.shape[0]
-    data = data[data.apply(lambda row: current_wh(row.author), axis=1) == True]
-    print("CONFIG: Dropped {0} comments by authors NOT currently in WH."
+    data = data[data.apply(lambda row: current_team_member(row.author), axis=1) == True]
+    print("CONFIG: Dropped {0} comments by authors NOT currently in {0} team.".format(TEAM)
             .format(rows_before-data.shape[0]))
 
 # Find authors will less comments than the configured appearance threshold
@@ -148,4 +148,4 @@ grid_search.fit(training,tr_labels)
 print("Best score: %0.3f" % grid_search.best_score_)
 
 # Save the model to a file
-pickle.dump(grid_search,open('model_{0:.3f}.save'.format(abs(grid_search.best_score_)),'wb'))
+pickle.dump(grid_search,open('{0}_{1:.3f}.save'.format(TEAM,abs(grid_search.best_score_)),'wb'))

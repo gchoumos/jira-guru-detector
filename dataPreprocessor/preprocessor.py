@@ -66,10 +66,11 @@ class DataPreprocessor(object):
 
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
-        self.comms_input_file = DP_SETTINGS['comms_input_file']
-        self.comms_output_file = DP_SETTINGS['comms_output_file']
-        self.summs_input_file = DP_SETTINGS['summs_input_file']
-        self.summs_output_file = DP_SETTINGS['summs_output_file']
+        self.jiraPrj = DP_SETTINGS['jiraPrj']
+        self.comms_input_file = "comments_{0}.csv".format(self.jiraPrj)
+        self.comms_output_file = "comments_{0}.csv".format(self.jiraPrj)
+        self.summs_input_file = "summaries_{0}.csv".format(self.jiraPrj)
+        self.summs_output_file = "summaries_{0}.csv".format(self.jiraPrj)
         self.stopwords = set(STOPWORDS)
         for x in WORDS_TO_IGNORE['2char']:
             self.stopwords.add(x)
@@ -494,7 +495,7 @@ class DataPreprocessor(object):
         print("Presence combination finished. Combined presence introduced {0} new rows".format(len(new_rows)))
         # Now write the result to a new csv
         dict_keys = new_rows[0].keys()
-        with open('{0}/presence.csv'.format(self.output_path), 'w') as f:
+        with open('{0}/presence_{1}.csv'.format(self.output_path,self.jiraPrj), 'w') as f:
             dict_writer = DictWriter(f, dict_keys)
             dict_writer.writeheader()
             dict_writer.writerows(new_rows)
@@ -739,11 +740,11 @@ class DataPreprocessor(object):
         # And now append the combined to the comments for full thrust!
         combined = pd.concat([
             self.comments,
-            pd.read_csv('{0}/presence.csv'.format(self.output_path), header=0)
+            pd.read_csv('{0}/presence_{1}.csv'.format(self.output_path,self.jiraPrj), header=0)
         ])
         # And write the all to the final output file
         combined.to_csv(
-            '{0}/combined.csv'.format(self.output_path),
+            '{0}/combined_{1}.csv'.format(self.output_path, self.jiraPrj),
             columns=['key','created','issuetype','author','active','comment','code','quotes','noformats','panels'],
             index=False
         )

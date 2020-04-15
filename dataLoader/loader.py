@@ -21,7 +21,7 @@ import csv
 import re
 import os
 from jira import JIRA
-from settings import SETTINGS, BATCH_INTERVALS
+from settings import SETTINGS, BATCH_INTERVALS, ACTIVE_USERS
 
 import pdb
 
@@ -30,9 +30,12 @@ class DataLoader(object):
     def __init__(self):
         print("Initializing DataLoader...")
         self.jiraPrj = SETTINGS['jiraPrj']
-        self.ticketFrom = BATCH_INTERVALS[0]
-        self.ticketTo = BATCH_INTERVALS[-1]
+        self.ticketFrom = BATCH_INTERVALS[self.jiraPrj][0]
+        self.ticketTo = BATCH_INTERVALS[self.jiraPrj][-1]
         self.fields = SETTINGS['fields']
+
+        # Get the active users of the team this is about
+        self.active_users = ACTIVE_USERS[self.jiraPrj]
 
         self.output_path = SETTINGS['output_path']
 
@@ -77,17 +80,17 @@ class DataLoader(object):
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','issuetype','author','active','comment']
-        summ_name = '{0}/summaries.csv'.format(self.output_path)
-        comm_name = '{0}/comments.csv'.format(self.output_path)
+        summ_name = '{0}/summaries_{1}.csv'.format(self.output_path,self.jiraPrj)
+        comm_name = '{0}/comments_{1}.csv'.format(self.output_path,self.jiraPrj)
 
         # Create output folders if they don't already exist
         if not os.path.isdir(self.output_path):
             os.makedirs(self.output_path)
 
         # It's ugly I know
-        for i in range(0,len(BATCH_INTERVALS),2):
-            batchFrom = BATCH_INTERVALS[i]
-            batchTo = BATCH_INTERVALS[i+1]
+        for i in range(0,len(BATCH_INTERVALS[self.jiraPrj]),2):
+            batchFrom = BATCH_INTERVALS[self.jiraPrj][i]
+            batchTo = BATCH_INTERVALS[self.jiraPrj][i+1]
             print("Getting issues {0}-{1} to {0}-{2}".format(self.jiraPrj, batchFrom, batchTo))
             cur_batch = self.get_issues_batch(batchFrom,batchTo)
 
@@ -116,19 +119,28 @@ class DataLoader(object):
                  'labels': issue.fields.labels}
                 for issue in issues]
 
+    # Below change suggestions could probably be implemented in the jql that fetches the data instead of
+    # fetching them first and then filtering.
+    # Change suggestion: Save only if coming from active account. This is later checked as one of the
+    # preprocessor's first steps, but checking it here means that the size of the dataset will be greatly
+    # reduced.
+    # Change suggestion 2: Save only if it is coming from an author that belongs to the team of interest.
+    # This will greatly reduce both the size of this dataset as well as the preprocess time of the preprocessor.
+    # This filtering could also happen though in the preprocessor. Currently it happens in the guruDetector.
     def get_comment_data(self, issues):
         """ List coprehension for comments is a bit more swaggy than for the summaries """
         com_data = []
         for issue in issues:
             for i in range(issue.fields.comment.total):
-                com_data.append({
-                    'key': issue.key,
-                    'created': issue.fields.comment.comments[i].created[:10],
-                    'issuetype': issue.fields.issuetype.name,
-                    'author': issue.fields.comment.comments[i].author.name,
-                    'active': issue.fields.comment.comments[i].author.active,
-                    'comment': issue.fields.comment.comments[i].body,
-                 })
+                if issue.fields.comment.comments[i].author.name in self.active_users:
+                    com_data.append({
+                        'key': issue.key,
+                        'created': issue.fields.comment.comments[i].created[:10],
+                        'issuetype': issue.fields.issuetype.name,
+                        'author': issue.fields.comment.comments[i].author.name,
+                        'active': issue.fields.comment.comments[i].author.active,
+                        'comment': issue.fields.comment.comments[i].body,
+                    })
         return com_data
 
 dataLoader = DataLoader()

@@ -2,7 +2,7 @@ __pycache__
 issue_structure
 summaries.csv
 comments.csv
-tst.csv
+dataLoader/redacted.py
 dataPreprocessor/redacted.py
 guruDetector/redacted.py
 guruDetector/results_info
