@@ -1,17 +1,8 @@
 """
 TO DO
 
-- Make sure that you get a warning when the output files already exist. Otherwise they will get appended
-  and noone will easily notice. Maybe after warning the user it's worth considering either overwriting
-  the already existing files OR just exiting without doing anything.
-- I think we also need the issue type to be stored along with the comments. That's in case we want to
-  ignore the ones that come from incidents.
-- If assignee is different than the creator (or reporter) then maybe we could insert a line for both
-  (if they are openbet of course). This will also benefit us in cases that the ticket has been raised
-  by WH, which means that the summary line will be ignored.
-- What about using creator instead of reporter??
 - Mention the captcha challenge case that leads to a login error.
-- DEFECT: --rebuild will append on the existing files! This needs to be fixed. They must be removed first.
+- Find a better way to overcome the jira jql bug when a boundary ticket does not exist.
 """
 
 import getpass
@@ -80,12 +71,17 @@ class DataLoader(object):
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','issuetype','author','active','comment']
-        summ_name = '{0}/summaries_{1}.csv'.format(self.output_path,self.jiraPrj)
-        comm_name = '{0}/comments_{1}.csv'.format(self.output_path,self.jiraPrj)
+        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,self.jiraPrj)
+        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,self.jiraPrj)
 
         # Create output folders if they don't already exist
         if not os.path.isdir(self.output_path):
             os.makedirs(self.output_path)
+
+        # If datasets already exist - Do nothing
+        if os.path.isfile(summ_file) or os.path.isfile(comm_file):
+            print("Datasets already exist. Exiting...")
+            return
 
         # It's ugly I know
         for i in range(0,len(BATCH_INTERVALS[self.jiraPrj]),2):
@@ -97,13 +93,13 @@ class DataLoader(object):
             # Get the info we want for the "summaries" and "comments" csv files from this batch
             summaries = self.get_summary_data(cur_batch)
             # 'a' to append instead of overwriting
-            with open(summ_name,'a') as f:
+            with open(summ_file,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=summ_cols)
                 writer.writeheader()
                 writer.writerows(summaries)
 
             comments = self.get_comment_data(cur_batch)
-            with open(comm_name,'a') as f:
+            with open(comm_file,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=comm_cols)
                 writer.writeheader()
                 writer.writerows(comments)
@@ -132,6 +128,7 @@ class DataLoader(object):
         com_data = []
         for issue in issues:
             for i in range(issue.fields.comment.total):
+                # This if check reduces dataset size and preprocessing time significantly.
                 if issue.fields.comment.comments[i].author.name in self.active_users:
                     com_data.append({
                         'key': issue.key,
