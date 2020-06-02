@@ -92,7 +92,7 @@ tr_labels = data[data.comment.notnull()]['author']
 
 # The logistic regression for comments
 # multi_class to 'auto' instead of the default 'ovr' improved the fit (probably because 'auto` eventually 'selects `multinomial`)
-logr_comments = LogisticRegression(penalty='l2', tol=1e-05, multi_class='auto')
+logr_comments = LogisticRegression(penalty='l2', tol=1e-05, multi_class='auto', class_weight='balanced')
 
 thres_all = None
 pipeline = Pipeline([
@@ -133,7 +133,7 @@ pipeline = Pipeline([
         },
     )),
 
-    ('logr', LogisticRegression(penalty='l2', tol=0.0001, multi_class='auto')),
+    ('logr', LogisticRegression(penalty='l2', tol=0.0001, multi_class='auto', class_weight='balanced')),
 ])
 
 parameters = {}
