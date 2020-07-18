@@ -63,6 +63,20 @@ ACTIVE_USERS = {
   }
 }
 
+# Some people may have updated massly tickets which creates a lot of noise both in the comments
+# file, as well as in the combined after the process of ticket presence generation.
+# So we identify and remove those cases before it happens
+BULK_COMMENTS = {
+    'TEAM-1': [
+        "/TEAM_1_BULK_UPDATE_EXAMPLE_PATTERN_1_IN_COMMENTS/d",
+        "/TEAM_1_BULK_UPDATE_EXAMPLE_PATTERN_2_IN_COMMENTS/d",
+    ],
+    'TEAM-2': [
+        "/TEAM_2_BULK_UPDATE_EXAMPLE_PATTERN_1_IN_COMMENTS/d",
+        "/TEAM_2_BULK_UPDATE_EXAMPLE_PATTERN_2_IN_COMMENTS/d",
+    ]
+}
+
 try:
     from redacted import *
 except ImportError:

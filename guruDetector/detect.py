@@ -116,20 +116,12 @@ pipeline = Pipeline([
                 ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
                 ('sfm_comm_bi', SelectFromModel(logr_comments,threshold=thres_all)),
             ])),
-
-            # ('comment_trigrams', Pipeline([
-            #     ('selector', ItemSelector(key='comment')),
-            #     ('vect', CountVectorizer(decode_error='ignore', stop_words='english', max_df=0.6, min_df=0.0001,ngram_range=(3,3))),
-            #     ('tfidf', TfidfTransformer(norm='l2',sublinear_tf=True)),
-            #     ('sfm_comm_tri', SelectFromModel(logr_comments,threshold=thres_all)),
-            # ])),
         ],
 
         # Weight components in FeatureUnion - Here are the optimals
         transformer_weights={ # Best combination till now - 1.504
             'comment_unigrams': 1.40, # 1.40
             'comment_bigrams':  1.00, # 0.90 # 1.00
-            # 'comment_trigrams': 1.00, # 1.00
         },
     )),
 

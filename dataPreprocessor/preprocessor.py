@@ -54,6 +54,7 @@ import spacy
 import pandas as pd
 from gensim.parsing.preprocessing import STOPWORDS
 from collections import defaultdict
+from subprocess import check_output
 from csv import DictWriter
 from settings import *
 
@@ -81,10 +82,16 @@ class DataPreprocessor(object):
         self.args = parser.parse_args()
 
 
-    def load_comments(self):
-        print("Loading Comments dataset ...")
-        self.comments = pd.read_csv('{0}/{1}'
-            .format(self.input_path,self.comms_input_file), header=0)
+    def load_comments(self,reload=False):
+        if not reload:
+            print("Loading Comments dataset ...")
+            self.comments = pd.read_csv('{0}/{1}'
+                .format(self.input_path,self.comms_input_file), header=0)
+        else:
+            print("Reloading Comments dataset from preprocessed file ...")
+            self.comments = pd.read_csv('{0}/{1}'
+                .format(self.output_path,self.comms_output_file), header=0)
+
         print("Loading finished - Comments Dataset length is {0} rows".format(len(self.comments)))
 
 
@@ -458,6 +465,23 @@ class DataPreprocessor(object):
 
 
 
+    def remove_bulk_comments(self):
+        print("Removing bulk comments...")
+        sed_lines = BULK_COMMENTS[self.jiraPrj]
+        if len(sed_lines) == 0:
+            print("No bulk comments reported for {0} through configuration.".format(self.jiraPrj))
+        else:
+            for line in sed_lines:
+                print("Removing bulk comments with the following 'sed' argument:")
+                print("  {0}".format(line))
+                # File rows
+                rows_bef = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
+                os.system("sed -i '{0}' {1}/{2}".format(line,self.output_path,self.comms_output_file))
+                rows_aft = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
+                print("Removed {0} rows...".format(rows_bef-rows_aft))
+            print("Removal of bulk comments according to configuration completed...")
+
+
     def combine_ticket_presence_and_creation(self):
         print("Combining ticket presence and creation through comments...")
         # We'll need to know the active authors to include the active status in the added rows
@@ -728,6 +752,14 @@ class DataPreprocessor(object):
         # Write out the preprocessed summaries to a file
         self.summaries_to_csv()
         self.summaries_to_csv(['summary'])
+
+        # Remove comments coming from bulk updates according to the found cases. This will remove
+        # much noise that would be generated into the combined csv file from people that are
+        # occassionaly perform mass updated in Jira, like bulk closure of tickets.
+        # Check settings for more
+        self.remove_bulk_comments()
+        # Reload the comments now
+        self.load_comments(reload=True)
 
         ######################################################
         # Include summaries and comment presence as comments #
