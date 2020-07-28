@@ -28,6 +28,6 @@ APPEARANCE_THRESHOLD = 3
 
 # Redacted settings
 try:
-    from redacted import IGNORE_AUTHOR_GROUPS, ACTIVE_USERS
+    from redacted import ACTIVE_USERS
 except ImportError:
     print("No valid redacted settings found.")

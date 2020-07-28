@@ -486,8 +486,9 @@ class DataPreprocessor(object):
         print("Combining ticket presence and creation through comments...")
         # We'll need to know the active authors to include the active status in the added rows
         print("Generating list of active authors...")
-        # Compare it as a string, not as a boolen (check if can be changed - it should be easy)
-        active_authors = self.comments.author[self.comments.active=='True'].unique().tolist()
+        # Compare it as a boolean. Sometimes we have issues with this and we need to compare it as
+        # a string. I have not investigated the root of this weird behaviour.
+        active_authors = self.comments.author[self.comments.active == True].unique().tolist()
 
         print("Generating involvement map...")
         involvement = defaultdict(set)
