@@ -52,6 +52,8 @@ WORDS_TO_IGNORE = {
 
 # Will be overriden by the redacted settings. 
 IGNORE_AUTHOR_GROUPS = [r'.*exampleregexp\.com', r'.*exampleregexp2\.com']
+
+# A dict of dicts with pairs of 'username': 'Real Name'
 ACTIVE_USERS = {
   'TEAM-1': {
     'test1': 'Test User 1',

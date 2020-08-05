@@ -21,12 +21,12 @@ class DataLoader(object):
     def __init__(self):
         print("Initializing DataLoader...")
         self.jiraPrj = SETTINGS['jiraPrj']
-        self.ticketFrom = BATCH_INTERVALS[self.jiraPrj][0]
-        self.ticketTo = BATCH_INTERVALS[self.jiraPrj][-1]
         self.fields = SETTINGS['fields']
 
-        # Get the active users of the team this is about
-        self.active_users = ACTIVE_USERS[self.jiraPrj]
+        # Get the active users of the team(s)/jira project(s) this is about
+        self.active_users = {}
+        for project in self.jiraPrj:
+            self.active_users.update(ACTIVE_USERS[project])
 
         self.output_path = SETTINGS['output_path']
 
@@ -42,26 +42,30 @@ class DataLoader(object):
         print("Jira instance to be used: {0}".format(self.options['server']))
         print("Jira project: {0}".format(self.jiraPrj))
 
+
     def get_credentials(self):
         self.username = input("Type your Jira username: ")
         self.password = getpass.getpass(prompt="Type your Jira password: ")
+
 
     def jira_connect(self):
         # With this method a cookie will be created and upon expiration
         # the authentication process will be repeated transparently.
         self.jira = JIRA(self.options,auth=(self.username, self.password))
 
+
     def get_issues_batch(self, proj, batchFrom, batchTo):
         # If the issue search is of the form "issueKey in (WIL-1, WIL-2, WIL-3), then the
         # latest Jira Server will successfully ignore the non-existent (eg. deleted) issues.
         # Otherwise the range query could fail if a boundary is a non-existent issue.
-        # I am forced to use an ugly implementation as the project I am interested in is
+        # I am forced to use an ugly implementation as the projects I am interested in are
         # not hosted in a Jira Server of the latest (> 2 - I think) version.
         return self.jira.search_issues(
             "project = {0} and issuekey >= {0}-{1} and issuekey <={0}-{2} order by issuekey asc"
-            .format(self.jiraPrj, batchFrom, batchTo),
+            .format(proj, batchFrom, batchTo),
             maxResults=self.maxResults,
             fields=SETTINGS['fields'])
+
 
     def get_project_issues(self, proj, projFrom, projTo):
         """ Using JQL to get multiple results with a single request """
@@ -71,8 +75,8 @@ class DataLoader(object):
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','issuetype','author','active','comment']
-        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,proj)
-        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,proj)
+        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
+        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
 
         # Create output folders if they don't already exist
         if not os.path.isdir(self.output_path):
@@ -104,6 +108,16 @@ class DataLoader(object):
                 writer.writeheader()
                 writer.writerows(comments)
 
+
+    def get_issues(self):
+        # Trigger the issue fetching for each project that is configured in the Settings
+        print("Jira Projects configured: {0}".format(self.jiraPrj))
+        for project in self.jiraPrj:
+            issues_from = BATCH_INTERVALS[project][0]
+            issues_to = BATCH_INTERVALS[project][-1]
+            self.get_project_issues(project, issues_from, issues_to)
+
+
     def get_summary_data(self, issues):
         """ Swaggy list comprehension """
         return [{'key': issue.key,
@@ -114,6 +128,7 @@ class DataLoader(object):
                  'issuetype': issue.fields.issuetype.name,
                  'labels': issue.fields.labels}
                 for issue in issues]
+
 
     # Below change suggestions could probably be implemented in the jql that fetches the data instead of
     # fetching them first and then filtering.
@@ -139,6 +154,7 @@ class DataLoader(object):
                         'comment': issue.fields.comment.comments[i].body,
                     })
         return com_data
+
 
 dataLoader = DataLoader()
 dataLoader.get_credentials()
