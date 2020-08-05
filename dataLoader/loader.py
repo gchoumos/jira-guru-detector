@@ -51,7 +51,7 @@ class DataLoader(object):
         # the authentication process will be repeated transparently.
         self.jira = JIRA(self.options,auth=(self.username, self.password))
 
-    def get_issues_batch(self, batchFrom, batchTo):
+    def get_issues_batch(self, proj, batchFrom, batchTo):
         # If the issue search is of the form "issueKey in (WIL-1, WIL-2, WIL-3), then the
         # latest Jira Server will successfully ignore the non-existent (eg. deleted) issues.
         # Otherwise the range query could fail if a boundary is a non-existent issue.
@@ -63,16 +63,16 @@ class DataLoader(object):
             maxResults=self.maxResults,
             fields=SETTINGS['fields'])
 
-    def get_issues(self):
+    def get_project_issues(self, proj, projFrom, projTo):
         """ Using JQL to get multiple results with a single request """
         print("Will retrieve issues {0}-{1} to {0}-{2} in batches."
-            .format(self.jiraPrj, self.ticketFrom, self.ticketTo))
+            .format(proj, projFrom, projTo))
 
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','issuetype','author','active','comment']
-        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,self.jiraPrj)
-        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,self.jiraPrj)
+        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,proj)
+        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,proj)
 
         # Create output folders if they don't already exist
         if not os.path.isdir(self.output_path):
@@ -84,11 +84,11 @@ class DataLoader(object):
             return
 
         # It's ugly I know
-        for i in range(0,len(BATCH_INTERVALS[self.jiraPrj]),2):
-            batchFrom = BATCH_INTERVALS[self.jiraPrj][i]
-            batchTo = BATCH_INTERVALS[self.jiraPrj][i+1]
-            print("Getting issues {0}-{1} to {0}-{2}".format(self.jiraPrj, batchFrom, batchTo))
-            cur_batch = self.get_issues_batch(batchFrom,batchTo)
+        for i in range(0,len(BATCH_INTERVALS[proj]),2):
+            batchFrom = BATCH_INTERVALS[proj][i]
+            batchTo = BATCH_INTERVALS[proj][i+1]
+            print("Getting issues {0}-{1} to {0}-{2}".format(proj, batchFrom, batchTo))
+            cur_batch = self.get_issues_batch(proj,batchFrom,batchTo)
 
             # Get the info we want for the "summaries" and "comments" csv files from this batch
             summaries = self.get_summary_data(cur_batch)

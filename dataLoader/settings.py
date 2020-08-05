@@ -1,6 +1,6 @@
 """ Dataloader settings """
 SETTINGS = {
-    'jiraPrj': 'WIL',
+    'jiraPrj': ['WIL'],
     'options': {
         'server': 'https://jira.openbet.com',
     },
