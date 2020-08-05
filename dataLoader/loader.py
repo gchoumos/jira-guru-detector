@@ -26,7 +26,11 @@ class DataLoader(object):
         # Get the active users of the team(s)/jira project(s) this is about
         self.active_users = {}
         for project in self.jiraPrj:
-            self.active_users.update(ACTIVE_USERS[project])
+            if project in ACTIVE_USERS.keys():
+                print('Adding active users for project {0}.'.format(project))
+                self.active_users.update(ACTIVE_USERS[project])
+            else:
+                print('{0} does not have an active users list. This may be normal for multi-project cases.'.format(project))
 
         self.output_path = SETTINGS['output_path']
 
