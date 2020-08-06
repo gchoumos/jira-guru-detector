@@ -1,6 +1,7 @@
 """ Dataloader settings """
 SETTINGS = {
-    'jiraPrj': ['WIL'],
+    # The jira projects that this instance will include. It could be only one or a few of them.
+    'jiraPrj': ['BTF','BTFA','PPW','PPB'],
     'options': {
         'server': 'https://jira.openbet.com',
     },
