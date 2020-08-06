@@ -24,13 +24,22 @@ from feature_union_sklearn import (
                             MainExtractor
                         )
 
+# Gather the active users from the jira projects involved in this run
+all_active = {}
+for project in TEAM:
+    if project in ACTIVE_USERS.keys():
+        print('Adding active users for project {0}.'.format(project))
+        all_active.update(ACTIVE_USERS[project])
+    else:
+        print('{0} does not have an active users list. This may be normal for multi-project cases.'.format(project))
+
 # Tool to decide if author belongs to the ignored group
 def ignored(author):
     return True in [bool(re.match(x, author)) for x in IGNORE_AUTHOR_GROUPS]
 
 # Tool to decide if author belongs to the current team active users
 def current_team_member(author):
-    return author in ACTIVE_USERS[TEAM].keys()
+    return author in all_active.keys()
 
 # Read our csv
 data = pd.read_csv('{0}/{1}'.format(INPUT_PATH,INPUT_FILE))
@@ -61,7 +70,7 @@ if len(IGNORE_AUTHOR_GROUPS) > 0:
 if CURRENT_ONLY:
     rows_before = data.shape[0]
     data = data[data.apply(lambda row: current_team_member(row.author), axis=1) == True]
-    print("CONFIG: Dropped {0} comments by authors NOT currently in {0} team.".format(TEAM)
+    print("CONFIG: Dropped {0} comments by authors NOT currently in {0} team.".format('-'.join(TEAM))
             .format(rows_before-data.shape[0]))
 
 # Find authors will less comments than the configured appearance threshold
@@ -140,4 +149,4 @@ grid_search.fit(training,tr_labels)
 print("Best score: %0.3f" % grid_search.best_score_)
 
 # Save the model to a file
-pickle.dump(grid_search,open('{0}_{1:.3f}.save'.format(TEAM,abs(grid_search.best_score_)),'wb'))
+pickle.dump(grid_search,open('{0}_{1:.3f}.save'.format('-'.join(TEAM),abs(grid_search.best_score_)),'wb'))

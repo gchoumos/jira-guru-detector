@@ -1,9 +1,9 @@
 # The team that we will be running this for
-TEAM = 'WIL'
+TEAM = ['BTF','BTFA','PPW','PPB']
 
 # Source of data - They are considered to be already preprocessed
-INPUT_PATH = '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed_{0}'.format(TEAM)
-INPUT_FILE = 'combined_{0}.csv'.format(TEAM)
+INPUT_PATH = '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed_{0}'.format('-'.join(TEAM))
+INPUT_FILE = 'combined_{0}.csv'.format('-'.join(TEAM))
 
 # Consider only users that are still active in Jira. Default = True
 ACTIVE_ONLY = True

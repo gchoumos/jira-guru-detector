@@ -1,15 +1,15 @@
 """ Settings for the Data Preprocessor """
 
-# The team that we will be running this for
-TEAM = 'WIL'
+# The jira projects that we will be running this for
+PROJECTS = ['BTF','BTFA','PPW','PPB']
 
 # Consider only users that are still active in Jira. Default = True
 ACTIVE_ONLY = True
 
 DP_SETTINGS = {
     'input_path': '/home/gchoumo/Documents/jira-guru-detector/datasets',
-    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed_{0}'.format(TEAM),
-    'jiraPrj': TEAM,
+    'output_path': '/home/gchoumo/Documents/jira-guru-detector/datasets/preprocessed_{0}'.format('-'.join(PROJECTS)),
+    'jiraPrj': PROJECTS,
 }
 
 # Issue types not in this list will be discarded. If it's empty though, everything will be included.
@@ -52,6 +52,8 @@ WORDS_TO_IGNORE = {
 
 # Will be overriden by the redacted settings. 
 IGNORE_AUTHOR_GROUPS = [r'.*exampleregexp\.com', r'.*exampleregexp2\.com']
+
+# A dict of dicts with pairs of 'username': 'Real Name'
 ACTIVE_USERS = {
   'TEAM-1': {
     'test1': 'Test User 1',

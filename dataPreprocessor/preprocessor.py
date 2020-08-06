@@ -68,10 +68,10 @@ class DataPreprocessor(object):
         self.input_path = DP_SETTINGS['input_path']
         self.output_path = DP_SETTINGS['output_path']
         self.jiraPrj = DP_SETTINGS['jiraPrj']
-        self.comms_input_file = "comments_{0}.csv".format(self.jiraPrj)
-        self.comms_output_file = "comments_{0}.csv".format(self.jiraPrj)
-        self.summs_input_file = "summaries_{0}.csv".format(self.jiraPrj)
-        self.summs_output_file = "summaries_{0}.csv".format(self.jiraPrj)
+        self.comms_input_file = "comments_{0}.csv".format('-'.join(self.jiraPrj))
+        self.comms_output_file = "comments_{0}.csv".format('-'.join(self.jiraPrj))
+        self.summs_input_file = "summaries_{0}.csv".format('-'.join(self.jiraPrj))
+        self.summs_output_file = "summaries_{0}.csv".format('-'.join(self.jiraPrj))
         self.stopwords = set(STOPWORDS)
         for x in WORDS_TO_IGNORE['2char']:
             self.stopwords.add(x)
@@ -467,19 +467,22 @@ class DataPreprocessor(object):
 
     def remove_bulk_comments(self):
         print("Removing bulk comments...")
-        sed_lines = BULK_COMMENTS[self.jiraPrj]
-        if len(sed_lines) == 0:
-            print("No bulk comments reported for {0} through configuration.".format(self.jiraPrj))
-        else:
-            for line in sed_lines:
-                print("Removing bulk comments with the following 'sed' argument:")
-                print("  {0}".format(line))
-                # File rows
-                rows_bef = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
-                os.system("sed -i '{0}' {1}/{2}".format(line,self.output_path,self.comms_output_file))
-                rows_aft = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
-                print("Removed {0} rows...".format(rows_bef-rows_aft))
-            print("Removal of bulk comments according to configuration completed...")
+        for project in self.jiraPrj:
+            sed_lines = []
+            if project in BULK_COMMENTS.keys():
+                sed_lines = BULK_COMMENTS[project]
+            if len(sed_lines) == 0:
+                print("No bulk comments reported for {0} through configuration.".format(project))
+            else:
+                for line in sed_lines:
+                    print("Removing bulk comments with the following 'sed' argument:")
+                    print("  {0}".format(line))
+                    # File rows
+                    rows_bef = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
+                    os.system("sed -i '{0}' {1}/{2}".format(line,self.output_path,self.comms_output_file))
+                    rows_aft = int(check_output('wc -l {0}/{1}'.format(self.output_path,self.comms_output_file),shell=True).split()[0])
+                    print("Removed {0} rows...".format(rows_bef-rows_aft))
+                print("Removal of bulk comments according to configuration completed...")
 
 
     def combine_ticket_presence_and_creation(self):
@@ -520,7 +523,7 @@ class DataPreprocessor(object):
         print("Presence combination finished. Combined presence introduced {0} new rows".format(len(new_rows)))
         # Now write the result to a new csv
         dict_keys = new_rows[0].keys()
-        with open('{0}/presence_{1}.csv'.format(self.output_path,self.jiraPrj), 'w') as f:
+        with open('{0}/presence_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj)), 'w') as f:
             dict_writer = DictWriter(f, dict_keys)
             dict_writer.writeheader()
             dict_writer.writerows(new_rows)
@@ -773,11 +776,11 @@ class DataPreprocessor(object):
         # And now append the combined to the comments for full thrust!
         combined = pd.concat([
             self.comments,
-            pd.read_csv('{0}/presence_{1}.csv'.format(self.output_path,self.jiraPrj), header=0)
+            pd.read_csv('{0}/presence_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj)), header=0)
         ])
         # And write the all to the final output file
         combined.to_csv(
-            '{0}/combined_{1}.csv'.format(self.output_path, self.jiraPrj),
+            '{0}/combined_{1}.csv'.format(self.output_path, '-'.join(self.jiraPrj)),
             columns=['key','created','issuetype','author','active','comment','code','quotes','noformats','panels'],
             index=False
         )
