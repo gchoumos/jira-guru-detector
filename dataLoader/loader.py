@@ -43,6 +43,9 @@ class DataLoader(object):
         # The dict for the Summaries csv file. Will only hold what we need for the csv.
         self.summaries = {}
 
+        self.summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
+        self.comm_file = '{0}/comments_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
+
         print("Jira instance to be used: {0}".format(self.options['server']))
         print("Jira project: {0}".format(self.jiraPrj))
 
@@ -79,17 +82,10 @@ class DataLoader(object):
         # For the csv printing
         summ_cols = ['key','summary','creator','created','issuetype','labels','description']
         comm_cols = ['key','created','issuetype','author','active','comment']
-        summ_file = '{0}/summaries_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
-        comm_file = '{0}/comments_{1}.csv'.format(self.output_path,'-'.join(self.jiraPrj))
 
         # Create output folders if they don't already exist
         if not os.path.isdir(self.output_path):
             os.makedirs(self.output_path)
-
-        # If datasets already exist - Do nothing
-        if os.path.isfile(summ_file) or os.path.isfile(comm_file):
-            print("Datasets already exist. Exiting...")
-            return
 
         # It's ugly I know
         for i in range(0,len(BATCH_INTERVALS[proj]),2):
@@ -101,19 +97,24 @@ class DataLoader(object):
             # Get the info we want for the "summaries" and "comments" csv files from this batch
             summaries = self.get_summary_data(cur_batch)
             # 'a' to append instead of overwriting
-            with open(summ_file,'a') as f:
+            with open(self.summ_file,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=summ_cols)
                 writer.writeheader()
                 writer.writerows(summaries)
 
             comments = self.get_comment_data(cur_batch)
-            with open(comm_file,'a') as f:
+            with open(self.comm_file,'a') as f:
                 writer = csv.DictWriter(f, fieldnames=comm_cols)
                 writer.writeheader()
                 writer.writerows(comments)
 
 
     def get_issues(self):
+        # If datasets already exist - Do nothing
+        if os.path.isfile(self.summ_file) or os.path.isfile(self.comm_file):
+            print("Datasets already exist. Exiting...")
+            return
+
         # Trigger the issue fetching for each project that is configured in the Settings
         print("Jira Projects configured: {0}".format(self.jiraPrj))
         for project in self.jiraPrj:
@@ -164,3 +165,4 @@ dataLoader = DataLoader()
 dataLoader.get_credentials()
 dataLoader.jira_connect()
 dataLoader.get_issues()
+print("Data Loader finished.")
