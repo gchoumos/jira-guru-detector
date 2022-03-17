@@ -1,0 +1,11 @@
+__pycache__
+issue_structure
+summaries.csv
+comments.csv
+dataLoader/redacted.py
+dataPreprocessor/redacted.py
+guruDetector/redacted.py
+guruDetector/results_info
+.vscode
+**/*.save
+**/latest_model

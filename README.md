@@ -1,0 +1,3 @@
+# Jira - Guru Detector
+
+TBU
